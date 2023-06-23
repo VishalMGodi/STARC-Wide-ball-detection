@@ -1,6 +1,10 @@
 from vpython import *
+from pynput import keyboard
 
 scale = 100 # 1 meter = 100 pixels
+camera_speed = 20
+
+camera_x, camera_y, camera_z = 0, 50, 0
 
 # Constants
 grass_length = 23 * scale
@@ -56,8 +60,37 @@ stump21 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, 0), axis=vector(0,
 stump22 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, stump_spacing+2*stump_radius), axis=vector(0, 1, 0), radius=stump_radius, length=stump_height, color=color.white)
 stump23 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, -(stump_spacing+2*stump_radius)), axis=vector(0, 1, 0), radius=stump_radius, length=stump_height, color=color.white)
 
-# Move the camera for a hawkeye view of the box
-scene.camera.pos = vector(0, 50, 0)
+# Initialize the camera
+scene.camera.pos = vector(camera_x, camera_y, camera_z)
+
+# Move the camera on WASD keys
+def keyInput(key):
+	global camera_x, camera_y, camera_z
+
+	camera_x = scene.camera.pos.x
+	camera_y = scene.camera.pos.y
+	camera_z = scene.camera.pos.z
+
+	try:
+		if key.char == "w":
+			camera_z -= 1 * camera_speed
+		elif key.char == 's':
+			camera_z += 1 * camera_speed
+		elif key.char == 'a':
+			camera_x -= 1 * camera_speed
+		elif key.char == 'd':
+			camera_x += 1 * camera_speed
+	except AttributeError:
+		if key == keyboard.Key.space:
+			camera_y += 1 * camera_speed
+		elif key == keyboard.Key.shift:
+			camera_y -= 1 * camera_speed
+
+	scene.camera.pos = vector(camera_x, camera_y, camera_z)
+
+listener = keyboard.Listener(
+    on_press=keyInput)
+listener.start()
 
 while True:
 	rate(30)
