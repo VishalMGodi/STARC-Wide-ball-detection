@@ -1,10 +1,20 @@
 from vpython import *
-from pynput import keyboard
+from pynput import keyboard, mouse
+from win32api import GetSystemMetrics
+
+# Get Computer Screen width and height
+scene.width = GetSystemMetrics(0) - GetSystemMetrics(0)/10
+scene.height = GetSystemMetrics(1) - GetSystemMetrics(1)/4
 
 scale = 100 # 1 meter = 100 pixels
 camera_speed = 20
 
-camera_x, camera_y, camera_z = 0, 50, 0
+
+# CAMERA CONSTANTS
+CAMERA_X, CAMERA_Y, CAMERA_Z = 1381.57, 98.7792, -60.0066
+cameraCenter = vector(0,0,0)
+initial_camera_pos = vector(CAMERA_X, CAMERA_Y, CAMERA_Z)
+
 
 # Constants
 grass_length = 23 * scale
@@ -22,10 +32,6 @@ guide_line_width = 0.05 * scale
 stump_height = 0.7112 * scale
 stump_radius = 0.017465 * scale
 stump_spacing = 54/1000 * scale
-
-# Increase canvas to fill screen
-scene.width = 1340
-scene.height = 700
 
 # Define the pitch
 grass = box(pos=vector(0, 0, 0), length=grass_length, height=0.1, width=grass_width, color=color.green)
@@ -61,12 +67,13 @@ stump22 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, stump_spacing+2*st
 stump23 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, -(stump_spacing+2*stump_radius)), axis=vector(0, 1, 0), radius=stump_radius, length=stump_height, color=color.white)
 
 # Initialize the camera
-scene.camera.pos = vector(camera_x, camera_y, camera_z)
+scene.camera.pos = initial_camera_pos
+centerBall = sphere(pos = cameraCenter,radius = 0.1*scale, color = color.red)
+# scene.autoscale = False
+scene.center = initial_camera_pos
 
 # Move the camera on WASD keys
 def keyInput(key):
-	global camera_x, camera_y, camera_z
-
 	camera_x = scene.camera.pos.x
 	camera_y = scene.camera.pos.y
 	camera_z = scene.camera.pos.z
@@ -80,17 +87,21 @@ def keyInput(key):
 			camera_x -= 1 * camera_speed
 		elif key.char == 'd':
 			camera_x += 1 * camera_speed
+		elif key.char == 'r':
+			scene.center = centerBall.pos
+			return
 	except AttributeError:
 		if key == keyboard.Key.space:
 			camera_y += 1 * camera_speed
 		elif key == keyboard.Key.shift:
 			camera_y -= 1 * camera_speed
+	camera_pos_rel = vector(camera_x,camera_y,camera_z) - cameraCenter
+	scene.camera.pos = camera_pos_rel + cameraCenter
 
-	scene.camera.pos = vector(camera_x, camera_y, camera_z)
 
-listener = keyboard.Listener(
-    on_press=keyInput)
+listener = keyboard.Listener(on_press=keyInput)
 listener.start()
 
 while True:
 	rate(30)
+
