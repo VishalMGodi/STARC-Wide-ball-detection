@@ -74,29 +74,29 @@ scene.center = initial_camera_pos
 
 # Move the camera on WASD keys
 def keyInput(key):
-	camera_x = scene.camera.pos.x
-	camera_y = scene.camera.pos.y
-	camera_z = scene.camera.pos.z
+    global camera_speed
+    camera_pos_rel = scene.camera.pos
+    camera_axis = scene.camera.axis.norm()
 
-	try:
-		if key.char == "w":
-			camera_z -= 1 * camera_speed
-		elif key.char == 's':
-			camera_z += 1 * camera_speed
-		elif key.char == 'a':
-			camera_x -= 1 * camera_speed
-		elif key.char == 'd':
-			camera_x += 1 * camera_speed
-		elif key.char == 'r':
-			scene.center = centerBall.pos
-			return
-	except AttributeError:
-		if key == keyboard.Key.space:
-			camera_y += 1 * camera_speed
-		elif key == keyboard.Key.shift:
-			camera_y -= 1 * camera_speed
-	camera_pos_rel = vector(camera_x,camera_y,camera_z) - cameraCenter
-	scene.camera.pos = camera_pos_rel + cameraCenter
+    try:
+        if key.char == "w":
+            camera_pos_rel += camera_axis * camera_speed
+        elif key.char == 's':
+            camera_pos_rel -= camera_axis * camera_speed
+        elif key.char == 'a':
+            camera_pos_rel -= cross(camera_axis, vector(0, 1, 0)).norm() * camera_speed
+        elif key.char == 'd':
+            camera_pos_rel += cross(camera_axis, vector(0, 1, 0)).norm() * camera_speed
+        elif key.char == 'r':
+            scene.center = centerBall.pos
+            return
+    except AttributeError:
+        if key == keyboard.Key.space:
+            camera_pos_rel += vector(0, 1, 0) * camera_speed
+        elif key == keyboard.Key.shift:
+            camera_pos_rel -= vector(0, 1, 0) * camera_speed
+
+    scene.camera.pos = camera_pos_rel
 
 
 listener = keyboard.Listener(on_press=keyInput)

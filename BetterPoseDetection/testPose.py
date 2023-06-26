@@ -1,53 +1,107 @@
-import mediapipe as mp
-import cv2
 from vpython import *
+from pynput import keyboard, mouse
+from win32api import GetSystemMetrics
+
+# Get Computer Screen width and height
+scene.width = GetSystemMetrics(0) - GetSystemMetrics(0)/10
+scene.height = GetSystemMetrics(1) - GetSystemMetrics(1)/4
+
+scale = 100 # 1 meter = 100 pixels
+camera_speed = 20
 
 
-scene = canvas(title='Pose Mapping', width=800, height=600)
-box(pos=vector(0, 0, 0), size=vector(2, 2, 2), color=color.red)
-
-mp_drawing = mp.solutions.drawing_utils
-mp_pose = mp.solutions.pose
-pose = mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.5, min_tracking_confidence=0.5)
+# CAMERA CONSTANTS
+CAMERA_X, CAMERA_Y, CAMERA_Z = 1381.57, 98.7792, -60.0066
+cameraCenter = vector(0,0,0)
+initial_camera_pos = vector(CAMERA_X, CAMERA_Y, CAMERA_Z)
 
 
-cap = cv2.VideoCapture(0)  # Adjust the parameter if using a different camera
+# Constants
+grass_length = 23 * scale
+grass_width = 5 * scale
+pitch_length = 22.56 * scale
+pitch_width = 3.05 * scale
+popping_crease_length = 0.05 * scale
+popping_crease_width = 3.05 * scale
+bowling_crease_length = 0.05 * scale
+bowling_crease_width = 2.64 * scale
+return_crease_length = 2.44 * scale
+return_crease_width = 0.05 * scale
+guide_line_length = 1.22 * scale
+guide_line_width = 0.05 * scale
+stump_height = 0.7112 * scale
+stump_radius = 0.017465 * scale
+stump_spacing = 54/1000 * scale
+
+# Define the pitch
+grass = box(pos=vector(0, 0, 0), length=grass_length, height=0.1, width=grass_width, color=color.green)
+pitch = box(pos=vector(0, 0.1, 0), length=pitch_length, height=0.1, width=pitch_width, color=color.yellow)
+
+# Draw the popping creases
+popping_crease1 = box(pos=vector((17.68/2) * scale, 0.2, 0), length=popping_crease_length, height=0.1, width=popping_crease_width, color=color.blue)
+popping_crease2 = box(pos=vector(-(17.68/2) * scale, 0.2, 0), length=popping_crease_length, height=0.1, width=popping_crease_width, color=color.blue)
+
+# Draw the bowling creases
+bowling_crease1 = box(pos=vector((17.68/2 + 1.22) * scale, 0.2, 0), length=bowling_crease_length, height=0.1, width=bowling_crease_width, color=color.blue)
+bowling_crease2 = box(pos=vector(-(17.68/2 + 1.22) * scale, 0.2, 0), length=bowling_crease_length, height=0.1, width=bowling_crease_width, color=color.blue)
+
+# Draw the return creases
+return_crease1 = box(pos=vector((17.68/2 + 1.22) * scale, 0.2, 1.32 * scale), length=return_crease_length, height=0.1, width=return_crease_width, color=color.blue)
+return_crease2 = box(pos=vector((17.68/2 + 1.22) * scale, 0.2, -1.32 * scale), length=return_crease_length, height=0.1, width=return_crease_width, color=color.blue)
+return_crease3 = box(pos=vector(-(17.68/2 + 1.22) * scale, 0.2, 1.32 * scale), length=return_crease_length, height=0.1, width=return_crease_width, color=color.blue)
+return_crease4 = box(pos=vector(-(17.68/2 + 1.22) * scale, 0.2, -1.32 * scale), length=return_crease_length, height=0.1, width=return_crease_width, color=color.blue)
+
+# Draw the guide lines
+guide_line1 = box(pos=vector((17.68/2 + 1.22/2) * scale, 0.2, 0.89 * scale), length=guide_line_length, height=0.1, width=guide_line_width, color=color.blue)
+guide_line2 = box(pos=vector((17.68/2 + 1.22/2) * scale, 0.2, -0.89 * scale), length=guide_line_length, height=0.1, width=guide_line_width, color=color.blue)
+guide_line3 = box(pos=vector(-(17.68/2 + 1.22/2) * scale, 0.2, 0.89 * scale), length=guide_line_length, height=0.1, width=guide_line_width, color=color.blue)
+guide_line4 = box(pos=vector(-(17.68/2 + 1.22/2) * scale, 0.2, -0.89 * scale), length=guide_line_length, height=0.1, width=guide_line_width, color=color.blue)
+
+# Draw the stumps
+stump11 = cylinder(pos=vector((17.68/2 + 1.22) * scale, 0.3, 0), axis=vector(0, 1, 0), radius=stump_radius, length=stump_height, color=color.white)
+stump12 = cylinder(pos=vector((17.68/2 + 1.22) * scale, 0.3, stump_spacing+2*stump_radius), axis=vector(0, 1, 0), radius=stump_radius, length=stump_height, color=color.white)
+stump13 = cylinder(pos=vector((17.68/2 + 1.22) * scale, 0.3, -(stump_spacing+2*stump_radius)), axis=vector(0, 1, 0), radius=stump_radius, length=stump_height, color=color.white)
+
+stump21 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, 0), axis=vector(0, 1, 0), radius=stump_radius, length=stump_height, color=color.white)
+stump22 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, stump_spacing+2*stump_radius), axis=vector(0, 1, 0), radius=stump_radius, length=stump_height, color=color.white)
+stump23 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, -(stump_spacing+2*stump_radius)), axis=vector(0, 1, 0), radius=stump_radius, length=stump_height, color=color.white)
+
+# Initialize the camera
+scene.camera.pos = initial_camera_pos
+centerBall = sphere(pos = cameraCenter,radius = 0.1*scale, color = color.red)
+# scene.autoscale = False
+scene.center = initial_camera_pos
+
+# Move the camera on WASD keys
+def keyInput(key):
+    global camera_speed
+    camera_pos_rel = scene.camera.pos
+    camera_axis = scene.camera.axis.norm()
+
+    try:
+        if key.char == "w":
+            camera_pos_rel += camera_axis * camera_speed
+        elif key.char == 's':
+            camera_pos_rel -= camera_axis * camera_speed
+        elif key.char == 'a':
+            camera_pos_rel -= cross(camera_axis, vector(0, 1, 0)).norm() * camera_speed
+        elif key.char == 'd':
+            camera_pos_rel += cross(camera_axis, vector(0, 1, 0)).norm() * camera_speed
+        elif key.char == 'r':
+            scene.center = centerBall.pos
+            return
+    except AttributeError:
+        if key == keyboard.Key.space:
+            camera_pos_rel += vector(0, 1, 0) * camera_speed
+        elif key == keyboard.Key.shift:
+            camera_pos_rel -= vector(0, 1, 0) * camera_speed
+
+    scene.camera.pos = camera_pos_rel
+
+
+listener = keyboard.Listener(on_press=keyInput)
+listener.start()
 
 while True:
-    ret, frame = cap.read()
-    
-    # Flip the frame horizontally
-    frame = cv2.flip(frame, 1)
-    
-    # Process the frame with Mediapipe pose detection
-    image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    results = pose.process(image)
-    
-    # Map the pose on the VPython output
-    if results.pose_landmarks is not None:
-        # Clear previous VPython objects
-        scene.delete()
-        
-        # Draw the box
-        box(pos=vector(0, 0, 0), size=vector(2, 2, 2), color=color.red)
-        
-        # Get the pose landmarks
-        landmarks = results.pose_landmarks.landmark
-        
-        # Map each landmark to VPython coordinates and draw spheres
-        for landmark in landmarks:
-            x = landmark.x * 4 - 2  # Adjust the scaling and offset as per your requirements
-            y = landmark.y * 4 - 2
-            z = -landmark.z * 4  # Negative value to bring landmarks in front of the box
-            
-            sphere(pos=vector(x, y, z), radius=0.05, color=color.green)
-    
-    # Display the frame
-    cv2.imshow('Pose Mapping', frame)
-    
-    # Exit the loop if 'q' is pressed
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+	rate(30)
 
-cap.release()
-cv2.destroyAllWindows()
