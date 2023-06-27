@@ -10,7 +10,7 @@ scene.height = GetSystemMetrics(1) - GetSystemMetrics(1)/4
 
 scale = 100 # 1 meter = 100 pixels
 camera_speed = 20
-batsmanScale = 0 # IDEALLY 140
+batsmanScale = 140 # IDEALLY 140
 
 ## [IMP] in vector(x,y,z) +x #, -x #
 ## [IMP] in vector(x,y,z) +y moves down, -y moves up
