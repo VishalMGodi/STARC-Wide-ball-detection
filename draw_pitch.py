@@ -9,9 +9,14 @@ scene.height = GetSystemMetrics(1) - GetSystemMetrics(1)/4
 scale = 100 # 1 meter = 100 pixels
 camera_speed = 20
 
+## [IMP] in vector(x,y,z) +x #, -x #
+## [IMP] in vector(x,y,z) +y moves down, -y moves up
+## [IMP] in vector(x,y,z) +z #, -z #
+
 
 # CAMERA CONSTANTS
-CAMERA_X, CAMERA_Y, CAMERA_Z = 1381.57, 98.7792, -60.0066
+# CAMERA_X, CAMERA_Y, CAMERA_Z = 1381.57, 98.7792, -60.0066
+CAMERA_X, CAMERA_Y, CAMERA_Z = 1317.53, 98.7792, -0.00636476
 cameraCenter = vector(0,0,0)
 initial_camera_pos = vector(CAMERA_X, CAMERA_Y, CAMERA_Z)
 
@@ -68,9 +73,12 @@ stump23 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, -(stump_spacing+2*
 
 # Initialize the camera
 scene.camera.pos = initial_camera_pos
+scene.camera.rotate(1.5708 , vector(0, 1, 0))
 centerBall = sphere(pos = cameraCenter,radius = 0.1*scale, color = color.red)
+scene.center = centerBall.pos
+
 # scene.autoscale = False
-scene.center = initial_camera_pos
+# scene.center = initial_camera_pos
 
 # Move the camera on WASD keys
 def keyInput(key):
@@ -95,7 +103,7 @@ def keyInput(key):
             camera_pos_rel += vector(0, 1, 0) * camera_speed
         elif key == keyboard.Key.shift:
             camera_pos_rel -= vector(0, 1, 0) * camera_speed
-
+    print(f"{camera_pos_rel}")
     scene.camera.pos = camera_pos_rel
 
 

@@ -1,6 +1,8 @@
 from vpython import *
-from pynput import keyboard, mouse
+from pynput import keyboard
 from win32api import GetSystemMetrics
+import mediapipe as mp
+import cv2
 
 # Get Computer Screen width and height
 scene.width = GetSystemMetrics(0) - GetSystemMetrics(0)/10
@@ -8,10 +10,15 @@ scene.height = GetSystemMetrics(1) - GetSystemMetrics(1)/4
 
 scale = 100 # 1 meter = 100 pixels
 camera_speed = 20
+batsmanScale = 0 # IDEALLY 140
+
+## [IMP] in vector(x,y,z) +x #, -x #
+## [IMP] in vector(x,y,z) +y moves down, -y moves up
+## [IMP] in vector(x,y,z) +z #, -z #
 
 
 # CAMERA CONSTANTS
-CAMERA_X, CAMERA_Y, CAMERA_Z = 1381.57, 98.7792, -60.0066
+CAMERA_X, CAMERA_Y, CAMERA_Z = 1317.53, 98.7792, -0.00636476
 cameraCenter = vector(0,0,0)
 initial_camera_pos = vector(CAMERA_X, CAMERA_Y, CAMERA_Z)
 
@@ -32,6 +39,16 @@ guide_line_width = 0.05 * scale
 stump_height = 0.7112 * scale
 stump_radius = 0.017465 * scale
 stump_spacing = 54/1000 * scale
+
+# Create a mediapipe drawing object for drawing landmarks
+mp_drawing = mp.solutions.drawing_utils
+mp_holistic = mp.solutions.holistic
+
+# Initialize the MediaPipe Pose model
+mp_pose = mp.solutions.pose.Pose()
+
+# Start the webcam feed
+cap = cv2.VideoCapture(0)
 
 # Define the pitch
 grass = box(pos=vector(0, 0, 0), length=grass_length, height=0.1, width=grass_width, color=color.green)
@@ -66,11 +83,37 @@ stump21 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, 0), axis=vector(0,
 stump22 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, stump_spacing+2*stump_radius), axis=vector(0, 1, 0), radius=stump_radius, length=stump_height, color=color.white)
 stump23 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, -(stump_spacing+2*stump_radius)), axis=vector(0, 1, 0), radius=stump_radius, length=stump_height, color=color.white)
 
+# Draw the Batsman (Using Nose for development, change NOSE to RIGHT_HEEL)
+ballSize = 0.1
+batsmanNose = sphere(pos = cameraCenter, radius=0.1 * scale, color=color.red)
+
 # Initialize the camera
 scene.camera.pos = initial_camera_pos
-centerBall = sphere(pos = cameraCenter,radius = 0.1*scale, color = color.red)
+scene.camera.rotate(1.5708 , vector(0, 1, 0))
+centerBall = sphere(pos = cameraCenter,radius = 0.1*scale, color = color.white)
+scene.center = centerBall.pos
+
 # scene.autoscale = False
-scene.center = initial_camera_pos
+# scene.center = initial_camera_pos
+
+# Test Buttons
+def addBatsmanScale():
+    global batsmanScale
+    batsmanScale += 10
+    print(f"batsmanScale: {batsmanScale}")
+button( bind = addBatsmanScale, text='+10 batsmanScale' )
+
+def subBatsmanScale():
+    global batsmanScale
+    batsmanScale -= 10
+    print(f"batsmanScale: {batsmanScale}")
+button( bind = subBatsmanScale, text='-10 batsmanScale' )
+
+def changeBallSize():
+    global ballSize
+    batsmanNose.radius -= 0.01*scale
+    print(f"batsmanNoseRadius: {batsmanNose}")
+button( bind = changeBallSize, text='-0.01 ballSize' )
 
 # Move the camera on WASD keys
 def keyInput(key):
@@ -95,13 +138,44 @@ def keyInput(key):
             camera_pos_rel += vector(0, 1, 0) * camera_speed
         elif key == keyboard.Key.shift:
             camera_pos_rel -= vector(0, 1, 0) * camera_speed
-
+    # print(f"{camera_pos_rel}")
     scene.camera.pos = camera_pos_rel
 
 
 listener = keyboard.Listener(on_press=keyInput)
 listener.start()
+initialFrameFlag = 0
 
 while True:
-	rate(30)
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    results = mp_pose.process(frame_rgb)
+
+    if results.pose_landmarks:
+        landmarks = results.pose_landmarks.landmark
+        if not initialFrameFlag:
+            initX = landmarks[mp.solutions.pose.PoseLandmark.NOSE].x
+            initY = landmarks[mp.solutions.pose.PoseLandmark.NOSE].y
+            initialFrameFlag = 1
+        mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS)
+        print(f"\rNOSE COORDS {mp.solutions.pose.PoseLandmark.NOSE}: {round(landmarks[mp.solutions.pose.PoseLandmark.NOSE].x,2)},{round(landmarks[mp.solutions.pose.PoseLandmark.NOSE].y,2)},{round(landmarks[mp.solutions.pose.PoseLandmark.NOSE].z,2)}", end='', flush=True)
+        # Get the position of a specific landmark (e.g., nose) & update the pose object's position in VPython
+        batsmanNose.pos = vector(0,
+                                 0,
+                                 (initX - landmarks[mp.solutions.pose.PoseLandmark.NOSE].x) * batsmanScale)
+    cv2.namedWindow("MediaPipe Pose", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("MediaPipe Pose", 800,600)
+    cv2.imshow('MediaPipe Pose', frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        batsmanNose.pos = vector(0,0,0)
+        break
+    rate(45)
+
+mp_pose.close()
+cap.release()
+cv2.destroyAllWindows()
 
