@@ -3,14 +3,13 @@ from pynput import keyboard
 from win32api import GetSystemMetrics
 import mediapipe as mp
 import cv2
-
 # Get Computer Screen width and height
 scene.width = GetSystemMetrics(0) - GetSystemMetrics(0)/10
 scene.height = GetSystemMetrics(1) - GetSystemMetrics(1)/4
 
 scale = 100 # 1 meter = 100 pixels
 camera_speed = 20
-batsmanScale = 140 # IDEALLY 140
+batsmanScale = 450 # IDEALLY 450
 
 ## [IMP] in vector(x,y,z) +x #, -x #
 ## [IMP] in vector(x,y,z) +y moves down, -y moves up
@@ -48,7 +47,11 @@ mp_holistic = mp.solutions.holistic
 mp_pose = mp.solutions.pose.Pose()
 
 # Start the webcam feed
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(r'Dataset\batsmanMovementDataset\batsmanOnWideL1.MOV')
+# cap = cv2.VideoCapture(r'Dataset\batsmanMovementDataset\batsmanOnWideL2.MOV')
+# cap = cv2.VideoCapture(r'Dataset\batsmanMovementDataset\batsmanOnWideR1.MOV')
+# cap = cv2.VideoCapture(r'Dataset\batsmanMovementDataset\batsmanOnOutsideL.MOV')
+# cap = cv2.VideoCapture(r'Dataset\batsmanMovementDataset\batsmanOnOutsideR.MOV')
 
 # Define the pitch
 grass = box(pos=vector(0, 0, 0), length=grass_length, height=0.1, width=grass_width, color=color.green)
@@ -83,11 +86,13 @@ stump21 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, 0), axis=vector(0,
 stump22 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, stump_spacing+2*stump_radius), axis=vector(0, 1, 0), radius=stump_radius, length=stump_height, color=color.white)
 stump23 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, -(stump_spacing+2*stump_radius)), axis=vector(0, 1, 0), radius=stump_radius, length=stump_height, color=color.white)
 
-# Draw the Batsman (Using Nose for development, change NOSE to RIGHT_HEEL)
+# Draw the Batsman (Using RIGHT_FOOT_INDEX for development, change RIGHT_FOOT_INDEX to RIGHT_HEEL)
 ballSize = 0.1
-batsmanNose = sphere(pos = cameraCenter, radius=0.1 * scale, color=color.red)
+batsmanFoot = sphere(pos = cameraCenter+vector(-(17.68/2) * scale,0.4,0), radius=0.1 * scale, color=color.red)
 
 # Initialize the camera
+scene.fov = 0.8098
+scene.range = 300
 scene.camera.pos = initial_camera_pos
 scene.camera.rotate(1.5708 , vector(0, 1, 0))
 centerBall = sphere(pos = cameraCenter,radius = 0.1*scale, color = color.white)
@@ -97,23 +102,23 @@ scene.center = centerBall.pos
 # scene.center = initial_camera_pos
 
 # Test Buttons
-def addBatsmanScale():
-    global batsmanScale
-    batsmanScale += 10
-    print(f"batsmanScale: {batsmanScale}")
-button( bind = addBatsmanScale, text='+10 batsmanScale' )
+def printCameraStats():
+    print("\n---------\n")
+    print(f"scene.camera.pos: {scene.camera.pos}")
+    print(f"scene.camera.axis: {scene.camera.axis}")
+    print(f"scene.camera.up: {scene.camera.up}")
+    print(f"scene.forward: {scene.forward}")
+    print(f"scene.camera.center: {scene.center}")
+button( bind = printCameraStats, text='Print Camera Stats' )
 
-def subBatsmanScale():
-    global batsmanScale
-    batsmanScale -= 10
-    print(f"batsmanScale: {batsmanScale}")
-button( bind = subBatsmanScale, text='-10 batsmanScale' )
-
-def changeBallSize():
-    global ballSize
-    batsmanNose.radius -= 0.01*scale
-    print(f"batsmanNoseRadius: {batsmanNose}")
-button( bind = changeBallSize, text='-0.01 ballSize' )
+def startMoving():
+    global temp
+    temp = 0
+button( bind = startMoving, text='Start' )
+def stopMoving():
+    global temp
+    temp = 1
+button( bind = stopMoving, text='Stop' )
 
 # Move the camera on WASD keys
 def keyInput(key):
@@ -133,6 +138,9 @@ def keyInput(key):
         elif key.char == 'r':
             scene.center = centerBall.pos
             return
+        elif key.char == 'b':
+            scene.center = batsmanFoot.pos
+            return
     except AttributeError:
         if key == keyboard.Key.space:
             camera_pos_rel += vector(0, 1, 0) * camera_speed
@@ -145,37 +153,42 @@ def keyInput(key):
 listener = keyboard.Listener(on_press=keyInput)
 listener.start()
 initialFrameFlag = 0
+temp = 1
 
 while True:
     ret, frame = cap.read()
     if not ret:
-        break
-
+        cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        continue
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = mp_pose.process(frame_rgb)
 
     if results.pose_landmarks:
         landmarks = results.pose_landmarks.landmark
         if not initialFrameFlag:
-            initX = landmarks[mp.solutions.pose.PoseLandmark.NOSE].x
-            initY = landmarks[mp.solutions.pose.PoseLandmark.NOSE].y
+            initX = landmarks[mp.solutions.pose.PoseLandmark.RIGHT_FOOT_INDEX].x
+            initY = landmarks[mp.solutions.pose.PoseLandmark.RIGHT_FOOT_INDEX].y
             initialFrameFlag = 1
         mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS)
-        print(f"\rNOSE COORDS {mp.solutions.pose.PoseLandmark.NOSE}: {round(landmarks[mp.solutions.pose.PoseLandmark.NOSE].x,2)},{round(landmarks[mp.solutions.pose.PoseLandmark.NOSE].y,2)},{round(landmarks[mp.solutions.pose.PoseLandmark.NOSE].z,2)}", end='', flush=True)
-        # Get the position of a specific landmark (e.g., nose) & update the pose object's position in VPython
-        batsmanNose.pos = vector(0,
-                                 0,
-                                 (initX - landmarks[mp.solutions.pose.PoseLandmark.NOSE].x) * batsmanScale)
+        print(f"\rFOOT COORDS {mp.solutions.pose.PoseLandmark.RIGHT_FOOT_INDEX}: {round(landmarks[mp.solutions.pose.PoseLandmark.RIGHT_FOOT_INDEX].x,2)},{round(landmarks[mp.solutions.pose.PoseLandmark.RIGHT_FOOT_INDEX].y,2)},{round(landmarks[mp.solutions.pose.PoseLandmark.RIGHT_FOOT_INDEX].z,2)}", end='', flush=True)
+        # Get the position of a specific landmark (e.g., RIGHT_FOOT_INDEX) & update the pose object's position in VPython
+        batsmanFoot.pos = vector(-(17.68/2) * scale,
+                                 0.4,
+                                 (initX - landmarks[mp.solutions.pose.PoseLandmark.RIGHT_FOOT_INDEX].x) * batsmanScale)
     cv2.namedWindow("MediaPipe Pose", cv2.WINDOW_NORMAL)
     cv2.resizeWindow("MediaPipe Pose", 800,600)
     cv2.imshow('MediaPipe Pose', frame)
 
+    while temp:
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            batsmanFoot.pos = vector(0,0,0)
+            break
+
     if cv2.waitKey(1) & 0xFF == ord('q'):
-        batsmanNose.pos = vector(0,0,0)
+        batsmanFoot.pos = vector(0,0,0)
         break
-    rate(45)
+    rate(30)
 
 mp_pose.close()
 cap.release()
 cv2.destroyAllWindows()
-
