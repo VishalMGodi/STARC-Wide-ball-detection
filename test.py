@@ -144,14 +144,48 @@
 
 ###############
 
+# import cv2
+# img = cv2.imread(r'Dataset\batsmanMovementDataset\_DSC3114.JPG') # load a dummy image
+# while(1):
+#     cv2.imshow('img',img)
+#     k = cv2.waitKey(33)
+#     if k==27:    # Esc key to stop
+#         break
+#     elif k==-1:  # normally -1 returned,so don't print it
+#         continue
+#     else:
+#         print(k) # else print its value
+
 import cv2
-img = cv2.imread(r'Dataset\batsmanMovementDataset\_DSC3114.JPG') # load a dummy image
-while(1):
-    cv2.imshow('img',img)
-    k = cv2.waitKey(33)
-    if k==27:    # Esc key to stop
+from operator import itemgetter
+from glob import glob
+import matplotlib.pyplot as plt
+import numbers as np
+
+paper = cv2.imread(r'Dataset\STARC - New Dataset\Camera Data\Calibration\_DSC3127.JPG')
+cv2.namedWindow("MainWindow", cv2.WINDOW_NORMAL)
+cv2.resizeWindow("MainWindow", 800,600)
+
+# Video Feed
+# cap = cv2.VideoCapture(0)
+while True:
+    cv2.imshow('MainWindow', paper)
+    creasePitch 
+    if(cv2.waitKey(10) & 0xFF == ord('q')):
         break
-    elif k==-1:  # normally -1 returned,so don't print it
-        continue
-    else:
-        print(k) # else print its value
+
+paper.release()
+cv2.destroyAllWindows()
+
+# while True:
+#     # Coordinates that you want to Perspective Transform
+#     pts1 = [[219,209],[612,8],[380,493],[785,271]]
+#     # Size of the Transformed Image
+#     pts2 = [[0,0],[500,0],[0,400],[500,400]]
+#     for val in pts1:
+#         cv2.circle(paper,(val[0],val[1]),5,(0,255,0),-1)
+#     # M = cv2.getPerspectiveTransform(pts1,pts2)
+#     # dst = cv2.warpPerspective(paper,M,(500,400))
+#     plt.imshow(paper)
+#     if cv2.waitKey(1) & 0xFF == ord('q'):
+#         break

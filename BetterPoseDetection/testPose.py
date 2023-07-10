@@ -3,13 +3,14 @@ from pynput import keyboard
 from win32api import GetSystemMetrics
 import mediapipe as mp
 import cv2
+import math
 # Get Computer Screen width and height
 scene.width = GetSystemMetrics(0) - GetSystemMetrics(0)/10
 scene.height = GetSystemMetrics(1) - GetSystemMetrics(1)/4
 
 scale = 100 # 1 meter = 100 pixels
 camera_speed = 20
-batsmanScale = 450 # IDEALLY 450
+batsmanScale = 300 # IDEALLY 450, 300 for newDataset
 
 ## [IMP] in vector(x,y,z) +x #, -x #
 ## [IMP] in vector(x,y,z) +y moves down, -y moves up
@@ -43,28 +44,17 @@ stump_spacing = 54/1000 * scale
 mp_drawing = mp.solutions.drawing_utils
 mp_holistic = mp.solutions.holistic
 
-# Initialize the MediaPipe Pose model
+# Initialize the MainWindow model
 mp_pose = mp.solutions.pose.Pose()
 
 # Start the webcam feed
-# cap = cv2.VideoCapture(r'Dataset\batsmanMovementDataset\batsmanOnWideL1.MOV')
-# cap = cv2.VideoCapture(r'Dataset\Alldone\9_Kan_C.mp4')
-cap = cv2.VideoCapture(r'Dataset\batsmanMovementDataset\batsmanOnWideL2.MOV')
-# cap = cv2.VideoCapture(r'Dataset\batsmanMovementDataset\batsmanOnWideR1.MOV')
-# cap = cv2.VideoCapture(r'Dataset\batsmanMovementDataset\batsmanOnOutsideL.MOV')
-# cap = cv2.VideoCapture(r'Dataset\batsmanMovementDataset\batsmanOnOutsideR.MOV')
-# cap = cv2.VideoCapture(r'Dataset\batsmanMovementDataset\batsmanStanding.MOV')
 
-pitch_texture = r"Textures\TexturesCom_Ground_Soil7_header.jpg"
+cap = cv2.VideoCapture(r'Dataset\STARC - New Dataset\Dataset\New_5_MainView.mp4')
+
+
 # Define the pitch
 grass = box(pos=vector(0, 0, 0), length=grass_length, height=0.1, width=grass_width, color=color.green)
-pitch = box(pos=vector(0, 0.1, 0), length=pitch_length, height=0.1, width=pitch_width, texture={
-    "file": pitch_texture,
-    "mapping": "cube",
-    "scale": (1, 1, 1),
-    "flip": False,
-    "interpolate": True
-}, color=color.white)
+pitch = box(pos=vector(0, 0.1, 0), length=pitch_length, height=0.1, width=pitch_width, color=color.yellow)
 
 # Draw the popping creases
 popping_crease1 = box(pos=vector((17.68/2) * scale, 0.2, 0), length=popping_crease_length, height=0.1, width=popping_crease_width, color=color.blue)
@@ -100,7 +90,7 @@ stump23 = cylinder(pos=vector(-(17.68/2 + 1.22) * scale, 0.3, -(stump_spacing+2*
 
 # Draw the Batsman (Using RIGHT_FOOT_INDEX for development, change RIGHT_FOOT_INDEX to RIGHT_HEEL)
 ballSize = 0.1
-batsmanFoot = sphere(pos = cameraCenter+vector(-(17.68/2) * scale,0.4,0), radius=0.1 * scale, color=color.red)
+batsmanFoot = sphere(pos = cameraCenter+vector(-(17.68/2) * scale,0.4,0), radius=0.04 * scale, color=color.red)
 
 # Draw the virutal wide line, which moves parallel to the batsman's foot
 virtual_guide_line = box(pos=vector(-(17.68/2 + 1.22/2) * scale, 0.3, 0.89 * scale), length=guide_line_length, height=0.1, width=guide_line_width, color=color.magenta)
@@ -136,20 +126,64 @@ def stopMoving():
     global temp
     temp = 1
 button( bind = stopMoving, text='Stop' )
-# pitch
-texture_width = pitch_width
-def increasePitchTexture():
-    global texture_width
-    texture_width += 100
-    pitch.texture = {
-        "file": pitch_texture,
-        "mapping": "cube",
-        "scale": (pitch_length, 1, texture_width),
-        "flip": False,
-        "interpolate": True
-    }
-    print("pitch.texture: ", pitch.texture)
-button( bind = increasePitchTexture, text='textureWidth +10' )
+
+def printLineStats():
+    print(f"LEFT: Start: {(start_width,start_Height)} END: {(end_width,end_Height)}",)
+    print(f"RIGHT: Start: {(width // 2, 730)} END: {(width // 2, 770)}")
+button( bind = printLineStats, text='PrintLineStats' )
+
+# Left Line
+value = 5
+start_width = 380
+end_width = 355
+start_Height = 730
+end_Height = 770
+
+# warpAnglePerPixel = 0.168361861 # How much warping per pixel with given angle 
+# warpAnglePerPixel = 0.151525675 # How much warping per pixel with given angle 
+warpAnglePerPixel = 0.017 # How much warping per pixel with given angle 
+
+def start_width_right():
+    global start_width
+    start_width += value
+button( bind = start_width_right, text='StartWidthMoveRight' )
+
+def start_width_left():
+    global start_width
+    start_width -= value
+button( bind = start_width_left, text='StartWidthMoveLeft' )
+
+
+def end_width_right():
+    global end_width
+    end_width += value
+button( bind = end_width_right, text='EndWidthMoveRight' )
+
+def end_width_left():
+    global end_width
+    end_width -= value
+button( bind = end_width_left, text='EndWidthMoveLeft' )
+
+def start_Height_right():
+    global start_Height
+    start_Height += value
+button( bind = start_Height_right, text='StartHeightMoveDown' )
+
+def start_Height_left():
+    global start_Height
+    start_Height -= value
+button( bind = start_Height_left, text='StartHeightMoveDown' )
+
+def end_Height_up():
+    global end_Height
+    end_Height -= value
+button( bind = end_Height_up, text='EndHeightMoveUp' )
+
+def end_Height_down():
+    global end_Height
+    end_Height += value
+button( bind = end_Height_down, text='EndHeightMoveDown' )
+
 
 # Move the camera on WASD keys
 def keyInput(key):
@@ -191,9 +225,30 @@ while True:
     if not ret:
         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
         continue
+    cv2.namedWindow("MainWindow", cv2.WINDOW_NORMAL)
+    height, width, _ = frame.shape
+    cv2.line(frame, (width // 2, 730), (width // 2, 770), (0, 0, 255), 5) # RIGHT LINE 
+    cv2.line(frame, (start_width,start_Height),(end_width,end_Height),(0,0,255),5) # Left Line
+    cv2.line(frame, (end_width,end_Height),(width // 2, 770),(255,0,0),5) # Line Joining 2 lines
+    print(f"Window Size: {(height, width)}")
+    
+    #     # ((width // 2)-i) + start_width - ((width // 2)-i)
+    #     # cv2.line(frame, (((width // 2)-i),start_Height),((width // 2)-i, 770),(0,255,0),5) # Line Joining 2 lines1
+    #     angle = math.atan(968/i)
+    #     radianAngle = math.radians(angle)
+    #     distance = 40
+    #     startX = i
+    #     startY = 770
+    #     endX = int(startX+distance*math.cos(radianAngle))
+    #     endY = int(startY+distance*math.sin(radianAngle))
+    #     print(startX,startY,endX,endY)
+
+    #     cv2.line(frame, (startX,startY),(endX, endY),(0,255,0),5) # Line Joining 2 lines
+
+
+    # cv2.resizeWindow("MainWindow", 800,600)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = mp_pose.process(frame_rgb)
-
     if results.pose_landmarks:
         landmarks = results.pose_landmarks.landmark
         if not initialFrameFlag:
@@ -212,11 +267,36 @@ while True:
         elif(wideLineDistanceShift >= 0 and wideLineDistanceShift < 0.43*scale):
             virtual_guide_line.pos.z = 0.89 * scale + wideLineDistanceShift
         if(virtual_guide_line.pos.z > return_crease3.pos.z): virtual_guide_line.pos.z = return_crease3.pos.z
-        print(f"\rwideLineDistanceShift: {wideLineDistanceShift} :batsmanFoot.pos: {batsmanFoot.pos}", end='', flush=True)
+        # print(f"\rwideLineDistanceShift: {wideLineDistanceShift} :batsmanFoot.pos: {batsmanFoot.pos}", end='', flush=True)
 
-    cv2.namedWindow("MediaPipe Pose", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("MediaPipe Pose", 800,600)
-    cv2.imshow('MediaPipe Pose', frame)
+    for i in range(30,605,30):
+        # cv2.line(frame,(960-i,770),(960,int(i*math.tan(math.radians(warpAnglePerPixel*i)))),(0,255,0),5) 
+        # print(f"\n======\nStart: {(960-i,770)}, End: {(960,int(i*math.tan(math.radians(warpAnglePerPixel*i))))},")
+        # print(f"Angle(Deg): {warpAnglePerPixel*i}")
+        # print(f"Angle(Rads): {math.radians(warpAnglePerPixel*i)}")
+        # print(f"TanValue : {math.tan(math.radians(warpAnglePerPixel*i))}")
+
+            # Define the starting point (center of the canvas)
+        start_point = (960 - i, 770)
+
+        # Define the angle of inclination in degrees
+        angle = math.atan(968/i)
+        # radianAngle = math.radians(angle)
+        print("================================================================")
+        print(angle)
+        print(start_point)
+        # Define the distance (length of the line)
+        distance = 40
+
+        # Calculate the endpoint of the line
+        # angle_radians = math.radians(angle)
+        end_point_x = int(start_point[0] + distance * math.cos(angle))
+        end_point_y = int(start_point[1] - distance * math.sin(angle))
+        end_point = (end_point_x, end_point_y)``
+        print(end_point)
+        cv2.line(frame,start_point,end_point,(0,255,0),5)
+    cv2.imshow('MainWindow', frame)
+
 
     while temp:
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -226,7 +306,18 @@ while True:
     if not temp and cv2.waitKey(1) & 0xFF == ord('q'):
         batsmanFoot.pos = vector(0,0,0)
         break
-    rate(60)
+    
+    # cv2.imshow('MainWindow', frame)
+
+    # while temp:
+    #     if cv2.waitKey(1) & 0xFF == ord('q'):
+    #         batsmanFoot.pos = vector(0,0,0)
+    #         break
+
+    # if not temp and cv2.waitKey(1) & 0xFF == ord('q'):
+    #     batsmanFoot.pos = vector(0,0,0)
+    #     break
+    # rate(60)
 
 mp_pose.close()
 cap.release()
