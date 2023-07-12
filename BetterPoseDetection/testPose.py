@@ -4,6 +4,7 @@ from win32api import GetSystemMetrics
 import mediapipe as mp
 import cv2
 import math
+import numpy as np
 # Get Computer Screen width and height
 scene.width = GetSystemMetrics(0) - GetSystemMetrics(0)/10
 scene.height = GetSystemMetrics(1) - GetSystemMetrics(1)/4
@@ -49,7 +50,7 @@ mp_pose = mp.solutions.pose.Pose()
 
 # Start the webcam feed
 
-cap = cv2.VideoCapture(r'Dataset\STARC - New Dataset\Dataset\New_5_MainView.mp4')
+cap = cv2.VideoCapture(r'Dataset\New_5_MainView.mp4')
 
 
 # Define the pitch
@@ -249,6 +250,7 @@ while True:
     # cv2.resizeWindow("MainWindow", 800,600)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = mp_pose.process(frame_rgb)
+    landmarks = ''
     if results.pose_landmarks:
         landmarks = results.pose_landmarks.landmark
         if not initialFrameFlag:
@@ -261,15 +263,15 @@ while True:
         batsmanFoot.pos = vector(-(17.68/2) * scale,
                                  0.4,
                                  (initX - landmarks[mp.solutions.pose.PoseLandmark.RIGHT_FOOT_INDEX].x) * batsmanScale)
-        wideLineDistanceShift = batsmanFoot.pos.z - stump22.pos.z+stump22.radius
-        if(wideLineDistanceShift >= 0.43*scale):
-            virtual_guide_line.pos.z = return_crease3.pos.z
-        elif(wideLineDistanceShift >= 0 and wideLineDistanceShift < 0.43*scale):
-            virtual_guide_line.pos.z = 0.89 * scale + wideLineDistanceShift
-        if(virtual_guide_line.pos.z > return_crease3.pos.z): virtual_guide_line.pos.z = return_crease3.pos.z
+        # wideLineDistanceShift = batsmanFoot.pos.z - stump22.pos.z+stump22.radius
+        # if(wideLineDistanceShift >= 0.43*scale):
+        #     virtual_guide_line.pos.z = return_crease3.pos.z
+        # elif(wideLineDistanceShift >= 0 and wideLineDistanceShift < 0.43*scale):
+        #     virtual_guide_line.pos.z = 0.89 * scale + wideLineDistanceShift
+        # if(virtual_guide_line.pos.z > return_crease3.pos.z): virtual_guide_line.pos.z = return_crease3.pos.z
         # print(f"\rwideLineDistanceShift: {wideLineDistanceShift} :batsmanFoot.pos: {batsmanFoot.pos}", end='', flush=True)
-
-    for i in range(30,605,30):
+    lines=[]
+    for i in range(10,605,15):
         # cv2.line(frame,(960-i,770),(960,int(i*math.tan(math.radians(warpAnglePerPixel*i)))),(0,255,0),5) 
         # print(f"\n======\nStart: {(960-i,770)}, End: {(960,int(i*math.tan(math.radians(warpAnglePerPixel*i))))},")
         # print(f"Angle(Deg): {warpAnglePerPixel*i}")
@@ -282,9 +284,9 @@ while True:
         # Define the angle of inclination in degrees
         angle = math.atan(968/i)
         # radianAngle = math.radians(angle)
-        print("================================================================")
-        print(angle)
-        print(start_point)
+        # print("================================================================")
+        # print(angle)
+        # print(start_point)
         # Define the distance (length of the line)
         distance = 40
 
@@ -292,10 +294,68 @@ while True:
         # angle_radians = math.radians(angle)
         end_point_x = int(start_point[0] + distance * math.cos(angle))
         end_point_y = int(start_point[1] - distance * math.sin(angle))
-        end_point = (end_point_x, end_point_y)``
-        print(end_point)
+        end_point = (end_point_x, end_point_y)
+        lines.append((start_point,end_point))
+        # print(end_point)
         cv2.line(frame,start_point,end_point,(0,255,0),5)
-    cv2.imshow('MainWindow', frame)
+
+    # results = mp_pose.process(frame_rgb)
+    # if results.pose_landmarks:
+        # landmarks = results.pose_landmarks.landmark
+    X_mp = landmarks[mp.solutions.pose.PoseLandmark.RIGHT_FOOT_INDEX].x
+    X_mp = int(X_mp*frame.shape[1])
+    Y_mp = landmarks[mp.solutions.pose.PoseLandmark.RIGHT_FOOT_INDEX].y
+    Y_mp = int(Y_mp*frame.shape[0])
+    # print(lines[:5])
+    # print("\r",X_mp,Y_mp,end="")
+    areas={}
+    for i,line in enumerate(lines):
+        point=(X_mp,Y_mp)
+        line_start = line[0]
+        line_end = line[1]
+
+        
+        # Check for intersection between the point and line
+        # def check_intersection(point, line_start, line_end):
+        x, y = point
+        x1, y1 = line_start
+        x2, y2 = line_end
+         # Calculate the area of the triangle formed by the point and line segment
+        area = abs(0.5 * (x1 * (y2 - y) + x2 * (y - y1) + x * (y1 - y2)))
+        # Calculate the length of the line segment
+        # line_length = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+        areas[i]=area
+
+            
+            # Check if the area is approximately zero (point lies on the line segment)
+            # if np.isclose(area, 0.0) and 0 <= ((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) / (line_length ** 2) <= 1:
+            #     return True
+            # return False
+    min_line_area_index=min(areas,key=areas.get)
+    intersecting_line=lines[min_line_area_index]
+    cv2.line(frame,intersecting_line[0],intersecting_line[1],(255,0,255),5)
+
+    #pixels in the video frame
+    distance_shifted_pixels=900-intersecting_line[0][0]
+    print(distance_shifted_pixels)
+    #1pixel in metres in the video frame
+    pixel_scale=0.002237288
+    distance_shifted_metres=distance_shifted_pixels*pixel_scale
+    print(distance_shifted_metres)
+    print("*"*100)
+    if(distance_shifted_metres>=0.43):
+        virtual_guide_line.pos.z = return_crease3.pos.z
+    elif(distance_shifted_metres >= 0 and distance_shifted_metres < 0.43):
+            virtual_guide_line.pos.z = 0.89 * scale + distance_shifted_metres*scale
+    if(virtual_guide_line.pos.z > return_crease3.pos.z): virtual_guide_line.pos.z = return_crease3.pos.z
+        # print(check_intersection(point, line_start, line_end))
+        # Check for intersection
+        # if check_intersection(point, line_start, line_end):
+        #     # Intersection detected
+            
+        #     print(f"Intersection between the point {point} and line ({line_start},{line_end})")
+
+    cv2.imshow('MainWindow', frame) 
 
 
     while temp:
