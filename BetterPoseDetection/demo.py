@@ -1,31 +1,52 @@
-import poseviz
-import numpy as np
-import cameralib
+from cvzone.PoseModule import PoseDetector
+import cv2
+import socket
 
-def main():
-    # Names of the body joints. Left joint names must start with 'l', right with 'r'.
-    joint_names = ['l_wrist', 'l_elbow']
+# Params
+width, height = 1280,720 
 
-    # Joint index pairs specifying which ones should be connected with a line (i.e., the bones of
-    # the body, e.g. wrist-elbow, elbow-shoulder)
-    joint_edges = [[0, 1]]
-    viz = poseviz.PoseViz(joint_names, joint_edges)
+# Webcam
+cap = cv2.VideoCapture(r'Dataset\STARC - New Dataset\Dataset\New_5_MainView.mp4')
+cap.set(3,width)
+cap.set(4,height)
 
-    # Iterate over the frames of e.g. a video
-    for i in range(1):
-        # Get the current frame 
-        frame = np.zeros([720, 1280, 3], np.uint8)
+# Hand Tracking
+detector = PoseDetector()
 
-        # Make predictions here
-        # ...
+# Communication
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+serverPort = ('localhost',10000)
 
-        # Update the visualization
-        viz.update(
-            frame=frame,
-            boxes=np.array([[10, 20, 100, 100]], np.float32),
-            poses=np.array([[[100, 100, 2000], [-100, 100, 2000]]], np.float32),
-            camera=cameralib.Camera.from_fov(55, frame.shape[:2]))
+while True:
+    success, img = cap.read()
+    img = cv2.resize(img,(0,0),None,0.5,0.5)
 
+    img = detector.findPose(img)
 
-if __name__ == '__main__':
-    main()
+    if not success:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        continue
+
+    data = []
+
+    lmList, bboxInfo = detector.findPosition(img, draw=False, bboxWithHands=False)
+
+    if(lmList):
+        for lm in lmList:
+            data.extend([lm[1],height - lm[2],lm[3]])
+
+        sock.sendto(str.encode(str(data)),serverPort)
+    
+    # try:    
+    #     print(f"\r{lmList[30]}",end='')
+    # except Exception as e:
+    #     print("\nNose Out of range...\n")
+
+    
+
+    cv2.imshow("Image", img)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
