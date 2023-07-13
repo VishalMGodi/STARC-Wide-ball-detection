@@ -196,6 +196,7 @@ while True:
 
     if results.pose_landmarks:
         landmarks = results.pose_landmarks.landmark
+        print("RIGHTFOOTX: ",int(landmarks[mp.solutions.pose.PoseLandmark.RIGHT_FOOT_INDEX].x * frame.shape[1]))
         if not initialFrameFlag:
             initX = landmarks[mp.solutions.pose.PoseLandmark.RIGHT_FOOT_INDEX].x
             initY = landmarks[mp.solutions.pose.PoseLandmark.RIGHT_FOOT_INDEX].y
@@ -206,6 +207,7 @@ while True:
         batsmanFoot.pos = vector(-(17.68/2) * scale,
                                  0.4,
                                  (initX - landmarks[mp.solutions.pose.PoseLandmark.RIGHT_FOOT_INDEX].x) * batsmanScale)
+        # print("POS: ",batsmanFoot.pos)
         wideLineDistanceShift = batsmanFoot.pos.z - stump22.pos.z+stump22.radius
         if(wideLineDistanceShift >= 0.43*scale):
             virtual_guide_line.pos.z = return_crease3.pos.z
@@ -222,6 +224,7 @@ while True:
         if cv2.waitKey(1) & 0xFF == ord('q'):
             batsmanFoot.pos = vector(0,0,0)
             break
+        
 
     if not temp and cv2.waitKey(1) & 0xFF == ord('q'):
         batsmanFoot.pos = vector(0,0,0)
