@@ -1,95 +1,160 @@
 import cv2 as cv
 import numpy as np
 
-# Video file path
-video_path = '/Users/varun/Desktop/Projects/STARC/STARC-Wide-ball-detection/Dataset/New_6_MainView.mp4'
-cap = cv.VideoCapture(video_path)
-cap.set(3, 1920)
-cap.set(4, 1080)
+from analyseVideo import runBat
 
-# Create the background subtractor object
-object_detector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
+import socket
 
-#Make a set of coordinates
-ball_coords = []
-final_pos = None
+def runMain():
+    # Video file path
+    video_path = '/Users/varun/Desktop/Projects/STARC/STARC-Wide-ball-detection/Dataset/New_6_MainView.mp4'
+    cap = cv.VideoCapture(video_path)
+    cap.set(3, 1920)
+    cap.set(4, 1080)
 
-def process_frame(frame):
+    # Create the background subtractor object
+    object_detector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
 
-    # Create the mask
-    mask = object_detector.apply(frame)
+    #Make a set of coordinates
+    ball_coords = []
+    final_pos = None
 
-    # Find the contours
-    contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-    for cnt in contours:
+    def process_frame(frame):
 
-        # Calculate the area and eliminate small contours
-        area = cv.contourArea(cnt)
+        # Create the mask
+        mask = object_detector.apply(frame)
 
-        if area < 400:
-            continue
+        # Find the contours
+        contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+        for cnt in contours:
 
-        # Calculate the perimeter of the contour
-        perimeter = cv.arcLength(cnt, True)
+            # Calculate the area and eliminate small contours
+            area = cv.contourArea(cnt)
 
-        if perimeter == 0:
-            continue
+            if area < 400:
+                continue
 
-        # Calculate the circularity of the contour
-        circularity = 4 * np.pi * (area / (perimeter * perimeter))
+            # Calculate the perimeter of the contour
+            perimeter = cv.arcLength(cnt, True)
 
-        # Filter contours based on circularity
-        if circularity < 0.5:
-            continue
+            if perimeter == 0:
+                continue
 
-        # pixel color checks
-        if (frame[cnt[0][0][1]][cnt[0][0][0]][2] < 115) or (frame[cnt[0][0][1]][cnt[0][0][0]][2] > 135):
-            continue
+            # Calculate the circularity of the contour
+            circularity = 4 * np.pi * (area / (perimeter * perimeter))
 
-        # if (frame[cnt[0][0][1]][cnt[0][0][0]][1] < 75) or (frame[cnt[0][0][1]][cnt[0][0][0]][1] > 90):
-        #     continue
+            # Filter contours based on circularity
+            if circularity < 0.5:
+                continue
 
-        if (frame[cnt[0][0][1]][cnt[0][0][0]][0] < 100) or (frame[cnt[0][0][1]][cnt[0][0][0]][0] > 120):
-            continue
+            # pixel color checks
+            if (frame[cnt[0][0][1]][cnt[0][0][0]][2] < 115) or (frame[cnt[0][0][1]][cnt[0][0][0]][2] > 135):
+                continue
 
-        # Add the coordinates of the contour
-        ball_coords.append((cv.boundingRect(cnt), "Main"))
+            # if (frame[cnt[0][0][1]][cnt[0][0][0]][1] < 75) or (frame[cnt[0][0][1]][cnt[0][0][0]][1] > 90):
+            #     continue
 
-    cv.imshow('Frame', frame)
+            if (frame[cnt[0][0][1]][cnt[0][0][0]][0] < 100) or (frame[cnt[0][0][1]][cnt[0][0][0]][0] > 120):
+                continue
 
-
-while True:
-    ret, frame = cap.read()
-    if frame is None:
-        break
-
-    # Resize the frame
-    frame = cv.resize(frame, (1920, 1080), fx=0, fy=0, interpolation=cv.INTER_CUBIC) 
-
-    process_frame(frame)
-    if True:
-
-        # Draw boxes for all the coordinates      
-        for i, coord in enumerate(ball_coords):
-            if(coord[1] == "Main"):
-                cv.rectangle(frame, (coord[0][0], coord[0][1]), (coord[0][0]+coord[0][2], coord[0][1]+coord[0][3]), (0, 0, 255))
-            elif(coord[1] == "Buffer"):
-                cv.rectangle(frame, (coord[0][0], coord[0][1]), (coord[0][0]+coord[0][2], coord[0][1]+coord[0][3]), (255, 255, 0))
+            # Add the coordinates of the contour
+            ball_coords.append((cv.boundingRect(cnt), "Main", int(cap.get(cv.CAP_PROP_POS_FRAMES))))
 
         cv.imshow('Frame', frame)
 
-        # Move frames when 'p' is pressed
-        while True:
-            if (cv.waitKey(0) & 0xFF == ord('p')):
-                break
 
-    if (cv.waitKey(1) & 0xFF == ord('q')):
-        break
+    while True:
+        ret, frame = cap.read()
+        if frame is None:
+            break
 
-final_pos = ball_coords[-1]
+        # Resize the frame
+        frame = cv.resize(frame, (1920, 1080), fx=0, fy=0, interpolation=cv.INTER_CUBIC) 
 
-print(f"TRAJECTORY: {ball_coords}\nFINAL POSITION: {final_pos}")
+        process_frame(frame)
+        if True:
 
-# Release the video capture object and close any open windows
-cap.release()
-cv.destroyAllWindows()
+            # Draw boxes for all the coordinates      
+            for i, coord in enumerate(ball_coords):
+                if(coord[1] == "Main"):
+                    cv.rectangle(frame, (coord[0][0], coord[0][1]), (coord[0][0]+coord[0][2], coord[0][1]+coord[0][3]), (0, 0, 255))
+                elif(coord[1] == "Buffer"):
+                    cv.rectangle(frame, (coord[0][0], coord[0][1]), (coord[0][0]+coord[0][2], coord[0][1]+coord[0][3]), (255, 255, 0))
+
+            cv.imshow('Frame', frame)
+
+            # Move frames when 'p' is pressed
+            # while True:
+            #     if (cv.waitKey(0) & 0xFF == ord('p')):
+            #         break
+
+        if (cv.waitKey(1) & 0xFF == ord('q')):
+            break
+
+    final_pos = ball_coords[-1]
+
+    # print(f"TRAJECTORY: {ball_coords}\nFINAL POSITION: {final_pos}")
+
+    # Release the video capture object and close any open windows
+    cap.release()
+    cv.destroyAllWindows()
+
+    return ball_coords
+
+if __name__ == '__main__':
+    coordsBat = runBat()
+    coordsMain = runMain()
+
+    final_bat_view_detection = coordsBat[-1]
+    closest_main_view_detection = min(coordsMain, key=lambda x: abs(x[2] - final_bat_view_detection[2]))
+
+    print(f"Bat View Detection: {final_bat_view_detection}\nMain View Detection: {closest_main_view_detection}")
+
+    final_ball_position = (final_bat_view_detection[0][0]+final_bat_view_detection[0][2]/2, final_bat_view_detection[0][1]+final_bat_view_detection[0][3]/2, closest_main_view_detection[0][0]+closest_main_view_detection[0][2]/2)
+
+    print(f"Final Ball Position: {final_ball_position}")
+
+    # Send the final ball position to the UDP server over port 11001
+    UDP_IP = "localhost"
+    UDP_PORT = 11001
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(str(final_ball_position).encode(), (UDP_IP, UDP_PORT))
+
+    # Show the positions in the videos
+    video_path = '/Users/varun/Desktop/Projects/STARC/STARC-Wide-ball-detection/Dataset/New_6_BatView.mp4'
+    cap = cv.VideoCapture(video_path)
+    cap.set(3, 1920)
+    cap.set(4, 1080)
+
+    frame_number_bat = final_bat_view_detection[2]
+    cap.set(cv.CAP_PROP_POS_FRAMES, frame_number_bat)
+    ret, frame = cap.read()
+
+    xb, yb, wb, hb = final_bat_view_detection[0]
+    cv.rectangle(frame, (xb, yb), (xb+wb, yb+hb), (0, 0, 255))
+
+    cv.imshow('bat', frame)
+
+    # Show the positions in the videos
+
+    video_path = '/Users/varun/Desktop/Projects/STARC/STARC-Wide-ball-detection/Dataset/New_6_MainView.mp4'
+    cap = cv.VideoCapture(video_path)
+
+    frame_number_main = closest_main_view_detection[2]
+    cap.set(cv.CAP_PROP_POS_FRAMES, frame_number_main)
+
+    ret, frame = cap.read()
+
+    xm, ym, wm, hm = closest_main_view_detection[0]
+    cv.rectangle(frame, (xm, ym), (xm+wm, ym+hm), (0, 0, 255))
+
+    cv.imshow('main', frame)
+
+    cv.waitKey(0)
+
+
+    # print(coordsMain, frame_number_main)
+
+    # final_ball_pos = (xb+wb/2, yb+hb/2, xm+wm/2)
+    # print(final_ball_pos)
