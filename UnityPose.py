@@ -6,7 +6,7 @@ def runPose(video_num, stop_frame):
     # Params
     width, height = 1280,720
 
-    cap = cv2.VideoCapture(f'/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_{video_num}_MainView.mp4')
+    cap = cv2.VideoCapture(f'Dataset/New Video Dataset/Dataset/New_{video_num}_MainView.mp4')
     cap.set(3,width)
     cap.set(4,height)
 
