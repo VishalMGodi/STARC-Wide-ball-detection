@@ -3,7 +3,7 @@ import numpy as np
 
 def runBat():
     # Video file path
-    video_path = '/Users/varun/Downloads/Dataset/New_6_BatView.mp4'
+    video_path = '/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_5_BatView.mp4'
     cap = cv.VideoCapture(video_path)
 
     # Create the background subtractor object
@@ -27,8 +27,6 @@ def runBat():
         contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
         for cnt in contours:
 
-            i = 0
-
             # Calculate the area and eliminate small contours
             area = cv.contourArea(cnt)
 
@@ -39,13 +37,18 @@ def runBat():
             y2M = int(frame.shape[0]/1.2)
 
             # Make a buffer rectangle within which the objects need to be detected if its not detected withing the main rectangle
-            xB = int(frame.shape[1]/3.75)
+            xB = 0 #int(frame.shape[1]/3.75)
             yB = int(frame.shape[0]/2)
             x2B = int(frame.shape[1])
             y2B = int(frame.shape[0]/1.2)
 
+            # cv.rectangle(frame, (xM, yM), (x2M, y2M), (0, 255, 0), 2)
+            # cv.rectangle(frame, (xB, yB), (x2B, y2B), (0, 0, 255), 4)
+
             if area < 100:
                 continue
+
+            # Draw the rectangles
 
             # Calculate the perimeter of the contour
             perimeter = cv.arcLength(cnt, True)
@@ -111,10 +114,8 @@ def runBat():
 
     final_pos = ball_coords[-1]
 
-    # print(f"TRAJECTORY: {ball_coords}\nFINAL POSITION: {final_pos}")
-
     # Release the video capture object and close any open windows
     cap.release()
     cv.destroyAllWindows()
 
-    return ball_coords
+    return final_pos

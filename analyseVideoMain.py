@@ -5,19 +5,24 @@ from analyseVideo import runBat
 
 import socket
 
-def runMain():
+def runMain(last_detection_frame, buffer):
+
     # Video file path
-    video_path = '/Users/varun/Desktop/Projects/STARC/STARC-Wide-ball-detection/Dataset/New_6_MainView.mp4'
+    video_path = '/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_5_MainView.mp4'
     cap = cv.VideoCapture(video_path)
     cap.set(3, 1920)
     cap.set(4, 1080)
+
+    # Move to the last detection frame
+    cap.set(cv.CAP_PROP_POS_FRAMES, last_detection_frame-buffer//2)
+
+    print(f"Current frame number: {int(cap.get(cv.CAP_PROP_POS_FRAMES))}")
 
     # Create the background subtractor object
     object_detector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
 
     #Make a set of coordinates
     ball_coords = []
-    final_pos = None
 
     def process_frame(frame):
 
@@ -60,40 +65,31 @@ def runMain():
             # Add the coordinates of the contour
             ball_coords.append((cv.boundingRect(cnt), "Main", int(cap.get(cv.CAP_PROP_POS_FRAMES))))
 
-        cv.imshow('Frame', frame)
-
-
     while True:
         ret, frame = cap.read()
         if frame is None:
             break
 
-        # Resize the frame
-        frame = cv.resize(frame, (1920, 1080), fx=0, fy=0, interpolation=cv.INTER_CUBIC) 
+        current_frame_number = int(cap.get(cv.CAP_PROP_POS_FRAMES))
 
-        process_frame(frame)
-        if True:
+        if abs(current_frame_number - last_detection_frame) <= buffer:  # You can adjust the threshold as needed
 
-            # Draw boxes for all the coordinates      
-            for i, coord in enumerate(ball_coords):
-                if(coord[1] == "Main"):
-                    cv.rectangle(frame, (coord[0][0], coord[0][1]), (coord[0][0]+coord[0][2], coord[0][1]+coord[0][3]), (0, 0, 255))
-                elif(coord[1] == "Buffer"):
-                    cv.rectangle(frame, (coord[0][0], coord[0][1]), (coord[0][0]+coord[0][2], coord[0][1]+coord[0][3]), (255, 255, 0))
+            # Resize the frame
+            frame = cv.resize(frame, (1920, 1080), fx=0, fy=0, interpolation=cv.INTER_CUBIC) 
+
+            process_frame(frame)
+
+            # # Draw boxes for all the coordinates      
+            # for i, coord in enumerate(ball_coords):
+            #     if(coord[1] == "Main"):
+            #         cv.rectangle(frame, (coord[0][0], coord[0][1]), (coord[0][0]+coord[0][2], coord[0][1]+coord[0][3]), (0, 0, 255))
+            #     elif(coord[1] == "Buffer"):
+            #         cv.rectangle(frame, (coord[0][0], coord[0][1]), (coord[0][0]+coord[0][2], coord[0][1]+coord[0][3]), (255, 255, 0))
 
             cv.imshow('Frame', frame)
 
-            # Move frames when 'p' is pressed
-            # while True:
-            #     if (cv.waitKey(0) & 0xFF == ord('p')):
-            #         break
-
-        if (cv.waitKey(1) & 0xFF == ord('q')):
-            break
-
-    final_pos = ball_coords[-1]
-
-    # print(f"TRAJECTORY: {ball_coords}\nFINAL POSITION: {final_pos}")
+            if (cv.waitKey(1) & 0xFF == ord('q')):
+                break
 
     # Release the video capture object and close any open windows
     cap.release()
@@ -103,14 +99,15 @@ def runMain():
 
 if __name__ == '__main__':
     coordsBat = runBat()
-    coordsMain = runMain()
+    coordsMain = runMain(coordsBat[-1], 40)
 
-    final_bat_view_detection = coordsBat[-1]
-    closest_main_view_detection = min(coordsMain, key=lambda x: abs(x[2] - final_bat_view_detection[2]))
+    print(f"Bat View Detections: {coordsBat}\nMain View Detections: {coordsMain}")
 
-    print(f"Bat View Detection: {final_bat_view_detection}\nMain View Detection: {closest_main_view_detection}")
+    closest_main_view_detection = min(coordsMain, key=lambda x: abs(x[2] - coordsBat[-1]))
 
-    final_ball_position = (final_bat_view_detection[0][0]+final_bat_view_detection[0][2]/2, final_bat_view_detection[0][1]+final_bat_view_detection[0][3]/2, closest_main_view_detection[0][0]+closest_main_view_detection[0][2]/2)
+    print(f"Bat View Detection: {coordsBat}\nMain View Detection: {closest_main_view_detection}")
+
+    final_ball_position = (coordsBat[0][0]+coordsBat[0][2]/2, coordsBat[0][1]+coordsBat[0][3]/2, closest_main_view_detection[0][0]+closest_main_view_detection[0][2]/2)
 
     print(f"Final Ball Position: {final_ball_position}")
 
@@ -122,23 +119,23 @@ if __name__ == '__main__':
     sock.sendto(str(final_ball_position).encode(), (UDP_IP, UDP_PORT))
 
     # Show the positions in the videos
-    video_path = '/Users/varun/Desktop/Projects/STARC/STARC-Wide-ball-detection/Dataset/New_6_BatView.mp4'
+    video_path = '/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_5_BatView.mp4'
     cap = cv.VideoCapture(video_path)
     cap.set(3, 1920)
     cap.set(4, 1080)
 
-    frame_number_bat = final_bat_view_detection[2]
+    frame_number_bat = coordsBat[2]
     cap.set(cv.CAP_PROP_POS_FRAMES, frame_number_bat)
     ret, frame = cap.read()
 
-    xb, yb, wb, hb = final_bat_view_detection[0]
+    xb, yb, wb, hb = coordsBat[0]
     cv.rectangle(frame, (xb, yb), (xb+wb, yb+hb), (0, 0, 255))
 
     cv.imshow('bat', frame)
 
     # Show the positions in the videos
 
-    video_path = '/Users/varun/Desktop/Projects/STARC/STARC-Wide-ball-detection/Dataset/New_6_MainView.mp4'
+    video_path = '/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_5_MainView.mp4'
     cap = cv.VideoCapture(video_path)
 
     frame_number_main = closest_main_view_detection[2]
