@@ -154,6 +154,7 @@ cython_debug/
 
 # User made
 /Datasets
+/Dataset
 /ballDataset
 
 # PyCharm
