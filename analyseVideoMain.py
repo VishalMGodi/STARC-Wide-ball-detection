@@ -1,14 +1,16 @@
 import cv2 as cv
 import numpy as np
+import threading
 
 from analyseVideo import runBat
+from UnityPose import runPose
 
 import socket
 
-def runMain(last_detection_frame, buffer):
+def runMain(last_detection_frame, buffer, video_num):
 
     # Video file path
-    video_path = '/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_5_MainView.mp4'
+    video_path = f'/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_{video_num}_MainView.mp4'
     cap = cv.VideoCapture(video_path)
     cap.set(3, 1920)
     cap.set(4, 1080)
@@ -98,8 +100,12 @@ def runMain(last_detection_frame, buffer):
     return ball_coords
 
 if __name__ == '__main__':
-    coordsBat = runBat()
-    coordsMain = runMain(coordsBat[-1], 40)
+
+    video_num = 5
+
+    coordsBat = runBat(video_num=video_num)
+    runPose(video_num,coordsBat[-1])
+    coordsMain = runMain(coordsBat[-1], 40, video_num=video_num)
 
     print(f"Bat View Detections: {coordsBat}\nMain View Detections: {coordsMain}")
 
@@ -118,8 +124,10 @@ if __name__ == '__main__':
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(str(final_ball_position).encode(), (UDP_IP, UDP_PORT))
 
+    pose_thread.join()
+
     # Show the positions in the videos
-    video_path = '/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_5_BatView.mp4'
+    video_path = f'/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_{video_num}_BatView.mp4'
     cap = cv.VideoCapture(video_path)
     cap.set(3, 1920)
     cap.set(4, 1080)
@@ -135,7 +143,7 @@ if __name__ == '__main__':
 
     # Show the positions in the videos
 
-    video_path = '/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_5_MainView.mp4'
+    video_path = f'/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_{video_num}_MainView.mp4'
     cap = cv.VideoCapture(video_path)
 
     frame_number_main = closest_main_view_detection[2]

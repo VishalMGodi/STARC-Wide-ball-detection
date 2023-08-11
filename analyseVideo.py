@@ -1,9 +1,9 @@
 import cv2 as cv
 import numpy as np
 
-def runBat():
+def runBat(video_num):
     # Video file path
-    video_path = '/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_5_BatView.mp4'
+    video_path = f'/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_{video_num}_BatView.mp4'
     cap = cv.VideoCapture(video_path)
 
     # Create the background subtractor object
