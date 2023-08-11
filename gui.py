@@ -187,8 +187,8 @@ class WebcamApp(QtWidgets.QWidget):
                 if not self.is_recording:
                     self.slider.setMaximum(len(self.frames1) - 1)
                     self.slider.setValue(len(self.frames1) - 1)
+                    self.update_frame(len(self.frames1) - 1)
                 # else: self.slider.setValue(min(self.slider.value()+1)
-                self.update_frame(len(self.frames1) - 1)
 
     def update(self):
         if self.frames1 and self.frames2:
