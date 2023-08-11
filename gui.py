@@ -1,3 +1,105 @@
+# # import socket, cv2, pickle, struct, imutils
+# #
+# # # Socket Create
+# # server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# # host_name = socket.gethostname()
+# # host_ip = socket.gethostbyname(host_name)
+# # print('HOST IP:', host_ip)
+# # port = 9999
+# # socket_address = (host_ip, port)
+# #
+# # # Socket Bind
+# # server_socket.bind(socket_address)
+# #
+# # # Socket Listen
+# # server_socket.listen(5)
+# # print("LISTENING AT:", socket_address)
+# #
+# # # Socket Accept
+# # while True:
+# #     client_socket, addr = server_socket.accept()
+# #     print('GOT CONNECTION FROM:', addr)
+# #     if client_socket:
+# #         vid = cv2.VideoCapture(0)
+# #
+# #         while (vid.isOpened()):
+# #             img, frame = vid.read()
+# #             # frame = imutils.resize(frame, width=320)
+# #             a = pickle.dumps(frame)
+# #             message = struct.pack("Q", len(a)) + a
+# #             client_socket.sendall(message)
+# #
+# #             cv2.imshow('TRANSMITTING VIDEO', frame)
+# #             if cv2.waitKey(1) == '13':
+# #                 client_socket.close()
+#
+# import cv2
+# import threading
+# import tkinter as tk
+# from tkinter import ttk
+# from PIL import Image, ImageTk
+#
+#
+# class WebcamApp:
+#     def __init__(self, window, window_title):
+#         self.window = window
+#         self.window.title(window_title)
+#
+#         self.cap = cv2.VideoCapture(0)
+#         self.frames = []
+#
+#         self.video_label = tk.Label(window)
+#         self.video_label.pack()
+#
+#         self.record_button = tk.Button(window, text="Start Recording", command=self.toggle_record)
+#         self.record_button.pack()
+#
+#         self.slider = ttk.Scale(window, from_=0, to=0, orient="horizontal", command=self.update_frame)
+#         self.slider.pack()
+#
+#         self.update()
+#
+#     def toggle_record(self):
+#         if not self.frames:
+#             threading.Thread(target=self.record).start()
+#
+#     def record(self):
+#         while True:
+#             ret, frame = self.cap.read()
+#             if ret:
+#                 self.frames.append(frame.copy())
+#                 self.slider.config(to=len(self.frames) - 1)
+#                 # self.update_frame(len(self.frames) - 1)
+#                 # print(len(self.frames))
+#
+#     def update(self):
+#         if self.frames:
+#             frame = self.frames[-1]
+#             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+#             img = Image.fromarray(frame)
+#             imgtk = ImageTk.PhotoImage(image=img)
+#             self.video_label.imgtk = imgtk
+#             self.video_label.config(image=imgtk)
+#
+#         self.window.after(10, self.update)
+#
+#     def update_frame(self, value):
+#         index = int(value)
+#         if 0 <= index < len(self.frames):
+#             frame = self.frames[index]
+#             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+#             img = Image.fromarray(frame)
+#             imgtk = ImageTk.PhotoImage(image=img)
+#             self.video_label.imgtk = imgtk
+#             self.video_label.config(image=imgtk)
+#
+#
+# if __name__ == "__main__":
+#     root = tk.Tk()
+#     app = WebcamApp(root, "Webcam App")
+#     root.mainloop()
+
+# import streamlit
 import cv2
 import threading
 import sys
@@ -78,11 +180,14 @@ class WebcamApp(QtWidgets.QWidget):
             ret1, frame1 = self.cap.read()#gets new frame
             ret2, frame2 = self.cap.read()  # gets new frame
             if ret1 and ret2:
+                max_frames = len(self.frames1) - 1
                 self.frames1.append(frame1.copy())#adds it
                 self.frames2.append(frame2.copy())#adds it
-                self.slider.setMaximum(len(self.frames1) - 1)
+
                 if not self.is_recording:
+                    self.slider.setMaximum(len(self.frames1) - 1)
                     self.slider.setValue(len(self.frames1) - 1)
+                # else: self.slider.setValue(min(self.slider.value()+1)
                 self.update_frame(len(self.frames1) - 1)
 
     def update(self):
@@ -141,7 +246,7 @@ class WebcamApp(QtWidgets.QWidget):
         self.save_button.hide()
         self.mrk_end_pt_button.hide()
         self.mrk_strt_pt_button.hide()
-        
+
         ht1, wdth1, layers1 = self.frames1[0].shape
         ht2, wdth2, layers2 = self.frames2[0].shape
         out1 = cv2.VideoWriter(output_filename1, fourcc, 30, (wdth1, ht1))
