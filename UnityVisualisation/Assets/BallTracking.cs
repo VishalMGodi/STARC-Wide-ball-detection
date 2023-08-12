@@ -22,8 +22,8 @@ public class BallTracking : MonoBehaviour {
 
     // Start is called before the first frame update
     void Start() {
-        BallPosition = new Vector3(-0.4f,0, 0);;
-        ScalingFactor = new Vector3(-813.5485f,1857.837f,715.3846154f);
+        BallPosition = new Vector3(0, 0, -10f);;
+        ScalingFactor = new Vector3(-813.5485f, 1857.837f, 715.3846154f);
         BallScale = new Vector3(0.1f, 0.1f, 0.1f);
     }
 

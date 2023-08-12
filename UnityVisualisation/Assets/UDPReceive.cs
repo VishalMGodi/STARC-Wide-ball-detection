@@ -46,8 +46,8 @@ public class UDPReceive : MonoBehaviour
 
                 if (printToConsole)
                 {
-                    Debug.Log($"Received {data2} on port {port} with a type of {data.GetType()}");
-                    Debug.Log($"Received {data} on port {port}");
+                    // Debug.Log($"Received {data2} on port {port} with a type of {data.GetType()}");
+                    // Debug.Log($"Received {data} on port {port}");
 
                     // Debug.Log("DATA: ");
                     // Debug.Log(port);

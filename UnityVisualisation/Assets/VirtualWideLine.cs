@@ -33,9 +33,9 @@ public class VirtualWideLine : MonoBehaviour
         float BatsmanFootZ = BatsmanFoot.transform.position.z;
         float WideLineDistanceShift = BatsmanFootZ - OffstumpZ;
 
-        Debug.Log("WidelineShift: " + WideLineDistanceShift);
-        Debug.Log("Max_Shift:" + maxShiftZ);
-        Debug.Log("Flag: " + flag);
+        // Debug.Log("WidelineShift: " + WideLineDistanceShift);
+        // Debug.Log("Max_Shift:" + maxShiftZ);
+        // Debug.Log("Flag: " + flag);
 
         if (WideLineDistanceShift > maxShiftZ && flag == true)
         {
