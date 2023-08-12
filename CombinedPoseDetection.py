@@ -4,7 +4,7 @@ import socket
 
 # Params
 width, height = 1280,720
-video_num = 5
+video_num = 6
 
 # Webcam
 # cap = cv2.VideoCapture(0)
@@ -16,7 +16,7 @@ cap2.set(3,width)
 cap2.set(4,height)
 
 # Pose Tracking
-detector = PoseDetector()
+detector = PoseDetector(detectionCon = 0.8, trackCon = 0.8, smooth = False)
 detector2 = PoseDetector()
 
 # Communication
@@ -28,8 +28,9 @@ while True:
     ret2, img2 = cap2.read() # Bat View
     ret, img = cap.read() # Main View
 
-    if not ret:
+    if not ret or not ret2:
         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        cap2.set(cv2.CAP_PROP_POS_FRAMES, 0)
         continue
 
     # * Resolution resized to 540x960
@@ -37,8 +38,8 @@ while True:
     img = cv2.resize(img,(0,0),None,0.5,0.5)
 
     # Blur the image for better accuracy
-    img = cv2.GaussianBlur(img, (9,9), 0)
-    img2 = cv2.GaussianBlur(img2, (9,9), 0)
+    # img = cv2.GaussianBlur(img, (9,9), 0)
+    img2 = cv2.GaussianBlur(img2, (11,11), 0)
 
     
     img2 = detector2.findPose(img2)

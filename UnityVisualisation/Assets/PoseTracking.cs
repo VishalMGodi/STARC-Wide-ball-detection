@@ -12,19 +12,21 @@ public class NewBehaviourScript : MonoBehaviour {
     public Vector3 PoseScale;
     public Vector3 PoseRotation;
     public Vector3 PoseDiv;
+    public float groundOffset;
 
     void Start() {
-        PosePosition = new Vector3(4.04f, -2.44f, -0.8f);
+        PosePosition = new Vector3(-4.1f, -1.75f, 0.79f);
         PoseScale = new Vector3(1f, 1f, 1f);
         PoseRotation = new Vector3(0,180,0);
         PoseDiv = new Vector3(122,114.7f,234);
+        groundOffset = 0.0f;
     }
 
     // Update is called once per frame
     void Update() {
 
-        Pose.transform.localScale = PoseScale;
-        Pose.transform.localPosition = PosePosition;
+        // Pose.transform.localScale = PoseScale;
+        // Pose.transform.localPosition = PosePosition;
         PosePointsGroup.transform.rotation = Quaternion.Euler(PoseRotation.x, PoseRotation.y, PoseRotation.z);
         
 
@@ -42,39 +44,54 @@ public class NewBehaviourScript : MonoBehaviour {
 
         string[] points = data.Split(',');
 
-        // print("Pose Position: " + Pose.transform.position.x + " " + Pose.transform.position.y + " " + Pose.transform.position.z);
-
-        // x0,y0,z0,x1,y1,z1,x2,y2,z2,x3,y3,z3
-        // Debug.Log(points)
-        // 0
-
-        float groundOffset = 0.0f;
-
-        // float y30 = float.Parse(points[30 * 3 + 1]) / PoseDiv.y; // Left Heel
+        // float y30 = float.Parse(points[30 * 3 + 1]) / PoseDiv.y; // Right Heel
         // float y31 = float.Parse(points[31 * 3 + 1]) / PoseDiv.y; // Left Toe
-        float y30 = float.Parse(points[30 * 3 + 1]) / PoseDiv.y; // Left Heel
-        float y31 = float.Parse(points[31 * 3 + 1]) / PoseDiv.y; // Left Toe
+        float y30 = posePoints[30-11].transform.position.y; // Right Heel
+        float y31 = posePoints[31-11].transform.position.y; // Left Toe
+        bool onGround = true;
 
-        if (y30 < 0.0f){
-            groundOffset = -1 * y30;
-        }else{
-            groundOffset = 0.0f;
-        }
-
-        for(int i=11;i<33;i++){
-            float x = float.Parse(points[i * 3])     / PoseDiv.x;  // 170
-            float y = float.Parse(points[i * 3 + 1]) / PoseDiv.y + groundOffset;  // 215
-            float z = float.Parse(points[i * 3 + 2]) / PoseDiv.z;  // 700
-
-            if(i >= 30 && y < 0.0f){
-                y = 0.0f;
-            }
+        for(int i=29;i<33;i++){
+            float x = float.Parse(points[i * 3])     / PoseDiv.x + PosePosition.x;  // 170
+            float y = float.Parse(points[i * 3 + 1]) / PoseDiv.y + PosePosition.y;  // 215
+            float z = float.Parse(points[i * 3 + 2]) / PoseDiv.z + PosePosition.z;  // 700
 
             posePoints[i-11].transform.localPosition = new Vector3(x, y, z);
+
+            if(posePoints[i-11].transform.position.y < 0.0f){
+                groundOffset = -1 * posePoints[i-11].transform.position.y;
+                Debug.Log($"{i}: {x} {y} {z} : GroundOffset:{groundOffset}");
+                posePoints[i-11].transform.position = new Vector3(posePoints[i-11].transform.position.x, 0.0f, posePoints[i-11].transform.position.z);
+            }else{
+                groundOffset = 0;
+                onGround = false;
+            }
         }
 
-        Debug.Log($"groundOffset: {groundOffset}, Left Heel (y): {y30}, Left Toe (y): {y31}");
-        Debug.Log($"Left Heel (y): {posePoints[30-11].transform.position}, Left Toe (y): {y31}");
+        for(int i=11;i<29;i++){
+            float x = float.Parse(points[i * 3])     / PoseDiv.x + PosePosition.x;  // 170
+            float y = float.Parse(points[i * 3 + 1]) / PoseDiv.y + PosePosition.y;  // 215
+            float z = float.Parse(points[i * 3 + 2]) / PoseDiv.z + PosePosition.z;  // 700
+
+            posePoints[i-11].transform.localPosition = new Vector3(x, y, z);
+            
+            // if(i >= 29 && posePoints[i-11].transform.position.y < 0.0f){
+            //     groundOffset = -1 * posePoints[i-11].transform.position.y;
+            //     Debug.Log($"{i}: {x} {y} {z} : GroundOffset:{groundOffset}");
+            //     posePoints[i-11].transform.position = new Vector3(posePoints[i-11].transform.position.x, 0.0f, posePoints[i-11].transform.position.z);
+            // }else{
+            //     groundOffset = 0;
+            // }    
+        }
+
+        if(onGround){
+            Pose.transform.localPosition = new Vector3(Pose.transform.localPosition.x, 
+                                                       Pose.transform.localPosition.y + groundOffset,
+                                                       Pose.transform.localPosition.z);
+        }
+
+        // Debug.Log($"RightHeel(y)[loc]: {y30}, groundOffset: {groundOffset}, Left Toe (y): {y31}");
+        // Debug.Log($"RightHeel(y)[abs]: {posePoints[30-11].transform.position}");
+
         //! Pose Calibration
         // // Left Sholder Coords
         // float x11 = float.Parse(points[11 * 3])     / PoseDiv.x;
