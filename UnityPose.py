@@ -2,11 +2,11 @@ from cvzone.PoseModule import PoseDetector
 import cv2
 import socket
 
-def runPose(video_num, stop_frame):
+def runPose(video_num, stop_frame, debug = False):
     
     # Params
     width, height = 1280,720
-    video_num = 6
+    # video_num = 6
 
     # Read video
     # cap = cv2.VideoCapture(0)
@@ -26,7 +26,7 @@ def runPose(video_num, stop_frame):
     serverPort = ('localhost',10000)
     # temp = False
 
-    while int(cap.get(cv2.CAP_PROP_POS_FRAMES)) < stop_frame:
+    while debug or int(cap.get(cv2.CAP_PROP_POS_FRAMES)) < stop_frame:
         ret2, img2 = cap2.read() # Bat View
         ret, img = cap.read() # Main View
 
@@ -58,11 +58,11 @@ def runPose(video_num, stop_frame):
                 data.extend([lm2[1],height - lm2[2],lm[1]])
             sock.sendto(str.encode(str(data)),serverPort)
             
-        # cv2.imshow("Image", img)
-        # cv2.imshow("MainView", img2)
+        cv2.imshow("Image", img)
+        cv2.imshow("MainView", img2)
 
-        # if cv2.waitKey(1) & 0xFF == ord('b'):
-        #     temp = True
+        if cv2.waitKey(1) & 0xFF == ord('b'):
+            temp = True
 
         # while temp:
         #     if cv2.waitKey(1) & 0xFF == ord('b'):
@@ -77,3 +77,6 @@ def runPose(video_num, stop_frame):
 
     cap.release()
     cv2.destroyAllWindows()
+
+
+# runPose(6,900,True)
