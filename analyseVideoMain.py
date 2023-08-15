@@ -1,16 +1,9 @@
 import cv2 as cv
 import numpy as np
-import threading
 
-from analyseVideo import runBat
-from UnityPose import runPose
-
-import socket
-
-def runMain(last_detection_frame, buffer, video_num):
+def runMain(last_detection_frame, buffer, video_path):
 
     # Video file path
-    video_path = f'/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_{video_num}_MainView.mp4'
     cap = cv.VideoCapture(video_path)
     cap.set(3, 1920)
     cap.set(4, 1080)
@@ -78,93 +71,10 @@ def runMain(last_detection_frame, buffer, video_num):
 
             # Resize the frame
             frame = cv.resize(frame, (1920, 1080), fx=0, fy=0, interpolation=cv.INTER_CUBIC) 
-
-            print("RESIZED FRAME SIZE:", frame.shape)
-
             process_frame(frame)
-
-            # # Draw boxes for all the coordinates      
-            # for i, coord in enumerate(ball_coords):
-            #     if(coord[1] == "Main"):
-            #         cv.rectangle(frame, (coord[0][0], coord[0][1]), (coord[0][0]+coord[0][2], coord[0][1]+coord[0][3]), (0, 0, 255))
-            #     elif(coord[1] == "Buffer"):
-            #         cv.rectangle(frame, (coord[0][0], coord[0][1]), (coord[0][0]+coord[0][2], coord[0][1]+coord[0][3]), (255, 255, 0))
-
-            cv.imshow('Frame', frame)
-
-            if (cv.waitKey(1) & 0xFF == ord('q')):
-                break
 
     # Release the video capture object and close any open windows
     cap.release()
     cv.destroyAllWindows()
 
     return ball_coords
-
-def start_analyse(video_num):
-
-    coordsBat = runBat(video_num)
-    runPose(video_num,coordsBat[-1])
-    coordsMain = runMain(coordsBat[-1], 40, video_num=video_num)
-
-    print(f"Bat View Detections: {coordsBat}\nMain View Detections: {coordsMain}")
-
-    closest_main_view_detection = min(coordsMain, key=lambda x: abs(x[2] - coordsBat[-1]))
-
-    print(f"Bat View Detection: {coordsBat}\nMain View Detection: {closest_main_view_detection}")
-
-    final_ball_position = (coordsBat[0][0]+coordsBat[0][2]/2, coordsBat[0][1]+coordsBat[0][3]/2, closest_main_view_detection[0][0]+closest_main_view_detection[0][2]/2)
-
-    print(f"Final Ball Position: {final_ball_position}")
-
-    # Send the final ball position to the UDP server over port 11001
-    UDP_IP = "localhost"
-    UDP_PORT = 11001
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(str(final_ball_position).encode(), (UDP_IP, UDP_PORT))
-
-    # pose_thread.join()
-
-    # # Show the positions in the videos
-    # video_path = f'/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_{video_num}_BatView.mp4'
-    # cap = cv.VideoCapture(video_path)
-    # cap.set(3, 1920)
-    # cap.set(4, 1080)
-
-    # frame_number_bat = coordsBat[2]
-    # cap.set(cv.CAP_PROP_POS_FRAMES, frame_number_bat)
-    # ret, frame = cap.read()
-
-    # xb, yb, wb, hb = coordsBat[0]
-    # cv.rectangle(frame, (xb, yb), (xb+wb, yb+hb), (0, 0, 255))
-
-    # cv.imshow('bat', frame)
-
-    # # Show the positions in the videos
-
-    # video_path = f'/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_{video_num}_MainView.mp4'
-    # cap = cv.VideoCapture(video_path)
-
-    # frame_number_main = closest_main_view_detection[2]
-    # cap.set(cv.CAP_PROP_POS_FRAMES, frame_number_main)
-
-    # ret, frame = cap.read()
-
-    # xm, ym, wm, hm = closest_main_view_detection[0]
-    # cv.rectangle(frame, (xm, ym), (xm+wm, ym+hm), (0, 0, 255))
-
-    # cv.imshow('main', frame)
-
-    # cv.waitKey(0)
-
-
-    # print(coordsMain, frame_number_main)
-
-    # final_ball_pos = (xb+wb/2, yb+hb/2, xm+wm/2)
-    # print(final_ball_pos)
-
-if __name__ == "__main__":
-    start_analyse(5)
-    # for i in range(1, 11):
-    #     start_analyse(i)

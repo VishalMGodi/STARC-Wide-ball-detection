@@ -2,16 +2,15 @@ from cvzone.PoseModule import PoseDetector
 import cv2
 import socket
 
-def runPose(video_num, stop_frame, debug = False):
+def runPose(video_path_bat, video_path_main):
     
     # Params
     width, height = 1280,720
-    # video_num = 6
 
     # Read video
     # cap = cv2.VideoCapture(0)
-    cap2 = cv2.VideoCapture(f'Dataset/New Video Dataset/Dataset/New_{video_num}_BatView.mp4')
-    cap = cv2.VideoCapture(f'Dataset/New Video Dataset/Dataset/New_{video_num}_MainView.mp4')
+    cap2 = cv2.VideoCapture(video_path_bat) # f'Dataset/New Video Dataset/Dataset/New_{video_num}_BatView.mp4')
+    cap = cv2.VideoCapture(video_path_main) # f'Dataset/New Video Dataset/Dataset/New_{video_num}_MainView.mp4')
     cap.set(3,width)
     cap.set(4,height)
     cap2.set(3,width)
@@ -24,17 +23,14 @@ def runPose(video_num, stop_frame, debug = False):
     # Communication
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     serverPort = ('localhost',10000)
-    # temp = False
 
-    while debug or int(cap.get(cv2.CAP_PROP_POS_FRAMES)) < stop_frame:
+    while True:
         ret2, img2 = cap2.read() # Bat View
         ret, img = cap.read() # Main View
 
         # Reset frames after completion
         if not ret or not ret2:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            cap2.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            continue
+            break
 
         # * Resolution resized to 540x960
         img2 = cv2.resize(img2,(0,0),None,0.5,0.5)
@@ -57,26 +53,3 @@ def runPose(video_num, stop_frame, debug = False):
             for lm,lm2 in list(zip(lmList, lmList2)):
                 data.extend([lm2[1],height - lm2[2],lm[1]])
             sock.sendto(str.encode(str(data)),serverPort)
-            
-        cv2.imshow("Image", img)
-        cv2.imshow("MainView", img2)
-
-        if cv2.waitKey(1) & 0xFF == ord('b'):
-            temp = True
-
-        # while temp:
-        #     if cv2.waitKey(1) & 0xFF == ord('b'):
-        #         temp = False
-        #         break
-        #     if cv2.waitKey(1) & 0xFF == ord('q'):
-        #         break
-        #     if cv2.waitKey(1) & 0xFF == ord('r'):
-        #         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        #         # break
-        #         continue
-
-    cap.release()
-    cv2.destroyAllWindows()
-
-
-# runPose(6,900,True)

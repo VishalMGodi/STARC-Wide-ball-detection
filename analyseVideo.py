@@ -1,17 +1,13 @@
 import cv2 as cv
 import numpy as np
 
-
 class BatMan:
     def __init__(self) -> None:
         self.shared_variable = 0
 
     def runBat(self, video_path):
         # Video file path
-        # video_path = f'/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_{video_num}_BatView.mp4'
         cap = cv.VideoCapture(video_path)
-
-        # shared_variable[1] = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
 
         # Create the background subtractor object
         object_detector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
@@ -40,18 +36,13 @@ class BatMan:
                 y2M = int(frame.shape[0]/1.2)
 
                 # Make a buffer rectangle within which the objects need to be detected if its not detected withing the main rectangle
-                xB = 0 #int(frame.shape[1]/3.75)
+                xB = int(frame.shape[1]/3.75)
                 yB = int(frame.shape[0]/2)
                 x2B = int(frame.shape[1])
                 y2B = int(frame.shape[0]/1.2)
 
-                # cv.rectangle(frame, (xM, yM), (x2M, y2M), (0, 255, 0), 2)
-                # cv.rectangle(frame, (xB, yB), (x2B, y2B), (0, 0, 255), 4)
-
                 if area < 100:
                     continue
-
-                # Draw the rectangles
 
                 # Calculate the perimeter of the contour
                 perimeter = cv.arcLength(cnt, True)
@@ -78,49 +69,37 @@ class BatMan:
 
                 # check if the contour is within the main rectangle
                 if (cnt[0][0][0] > xM) and (cnt[0][0][0] < x2M) and (cnt[0][0][1] > yM) and (cnt[0][0][1] < y2M):
-                    # ball_coords.append((cv.boundingRect(cnt), "Main", int(cap.get(cv.CAP_PROP_POS_FRAMES))))
                     print(f"Ball detected in frame {int(cap.get(cv.CAP_PROP_POS_FRAMES))} in Main Rectangle")
-                    # ball_detected = True
-                    # break
                     return (cv.boundingRect(cnt), "Main", int(cap.get(cv.CAP_PROP_POS_FRAMES)))
 
                 # Check if its within the buffer rectangle
                 elif (cnt[0][0][0] > xB) and (cnt[0][0][0] < x2B) and (cnt[0][0][1] > yB) and (cnt[0][0][1] < y2B):
-                    # ball_coords.append((cv.boundingRect(cnt), "Buffer", int(cap.get(cv.CAP_PROP_POS_FRAMES))))
-
                     if(cnt[0][0][0] < x2M):
-                        # ball_detected = True
                         print(f"Ball detected in frame {int(cap.get(cv.CAP_PROP_POS_FRAMES))} in Main Rectangle")
                         return (cv.boundingRect(cnt), "Buffer", int(cap.get(cv.CAP_PROP_POS_FRAMES)))
-                        # break
-                # else:
-                #     continue
-
             return None
-
-            # cv.imshow('Frame', frame)
-
 
         while True:
             ret, frame = cap.read()
             if frame is None:
                 self.shared_variable = 1
                 break
+
             ball_detected = process_frame(frame)
             self.shared_variable = int(cap.get(cv.CAP_PROP_POS_FRAMES))/int(cap.get(cv.CAP_PROP_FRAME_COUNT))
-            print(self.shared_variable)
-            # print(f"Current frame number: {int(cap.get(cv.CAP_PROP_POS_FRAMES))}\tBall dectection status: {not not ball_detected}")
+
+            print(f"Current frame: {int(cap.get(cv.CAP_PROP_POS_FRAMES))} / {int(cap.get(cv.CAP_PROP_FRAME_COUNT))}\t\tBall detected: {not not ball_detected}")
 
             if ball_detected:
                 self.shared_variable = 1
                 break
 
-
-
-        # final_pos = ball_coords[-1]
-
         # Release the video capture object and close any open windows
         cap.release()
-        # cv.destroyAllWindows()
+        cv.destroyAllWindows()
 
         return ball_detected
+    
+if __name__ == "__main__":
+    batman = BatMan()
+    batman.runBat("/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_5_BatView.mp4")
