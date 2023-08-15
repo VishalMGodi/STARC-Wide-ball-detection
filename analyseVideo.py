@@ -13,9 +13,6 @@ def runBat(video_num):
     ball_coords = []
     final_pos = None
 
-    # Flag to check if ball is detected
-    ball_detected = False
-
     def process_frame(frame):
 
         global ball_detected    
@@ -37,11 +34,12 @@ def runBat(video_num):
             y2M = int(frame.shape[0]/1.2)
 
             # Make a buffer rectangle within which the objects need to be detected if its not detected withing the main rectangle
-            xB = 0 #int(frame.shape[1]/3.75)
+            xB = int(frame.shape[1]/3.75)
             yB = int(frame.shape[0]/2)
-            x2B = int(frame.shape[1])
+            x2B = int(frame.shape[1]/1.75)
             y2B = int(frame.shape[0]/1.2)
 
+            # Draw the rectangles
             # cv.rectangle(frame, (xM, yM), (x2M, y2M), (0, 255, 0), 2)
             # cv.rectangle(frame, (xB, yB), (x2B, y2B), (0, 0, 255), 4)
 
@@ -76,41 +74,34 @@ def runBat(video_num):
             # check if the contour is within the main rectangle
             if (cnt[0][0][0] > xM) and (cnt[0][0][0] < x2M) and (cnt[0][0][1] > yM) and (cnt[0][0][1] < y2M):
                 ball_coords.append((cv.boundingRect(cnt), "Main", int(cap.get(cv.CAP_PROP_POS_FRAMES))))
-                ball_detected = True
-                break
+                print(f"Ball Detected in Main Rectangle at Frame: {int(cap.get(cv.CAP_PROP_POS_FRAMES))}")
+                return True
 
             # Check if its within the buffer rectangle
             elif (cnt[0][0][0] > xB) and (cnt[0][0][0] < x2B) and (cnt[0][0][1] > yB) and (cnt[0][0][1] < y2B):
                 ball_coords.append((cv.boundingRect(cnt), "Buffer", int(cap.get(cv.CAP_PROP_POS_FRAMES))))
 
                 if(cnt[0][0][0] < x2M):
-                    ball_detected = True
-                    break
-            else:
-                continue
+                    print(f"Ball Detected in Buffer Rectangle at Frame: {int(cap.get(cv.CAP_PROP_POS_FRAMES))}")
+                    return True
+                
+            return False
 
-        cv.imshow('Frame', frame)
+        # cv.imshow('Frame', frame)
 
 
     while True:
         ret, frame = cap.read()
         if frame is None:
             break
-        process_frame(frame)
-        if ball_detected:
+        ball_detected = process_frame(frame)
 
-            # Draw boxes for all the coordinates      
-            for i, coord in enumerate(ball_coords):
-                if(coord[1] == "Main"):
-                    cv.rectangle(frame, (coord[0][0], coord[0][1]), (coord[0][0]+coord[0][2], coord[0][1]+coord[0][3]), (0, 0, 255))
-                elif(coord[1] == "Buffer"):
-                    cv.rectangle(frame, (coord[0][0], coord[0][1]), (coord[0][0]+coord[0][2], coord[0][1]+coord[0][3]), (255, 255, 0))
-            cv.imshow('Frame', frame)
-            # if (cv.waitKey(0) & 0xFF == ord('q')):
-            #     break
-            # break
-        if (cv.waitKey(1) & 0xFF == ord('q')):
+        print(f"Frame: {int(cap.get(cv.CAP_PROP_POS_FRAMES))}\tBall Detected: {ball_detected}")
+
+        if ball_detected:
             break
+        # if (cv.waitKey(1) & 0xFF == ord('q')):
+        #     break
 
     final_pos = ball_coords[-1]
 

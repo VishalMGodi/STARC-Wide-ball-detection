@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 import threading
+import datetime
 
 from analyseVideo import runBat
 from UnityPose import runPose
@@ -101,11 +102,14 @@ def runMain(last_detection_frame, buffer, video_num):
 
 if __name__ == '__main__':
 
+    # Current time
+    start_time = datetime.datetime.now()
+
     video_num = 5
 
     coordsBat = runBat(video_num=video_num)
     runPose(video_num,coordsBat[-1])
-    coordsMain = runMain(coordsBat[-1], 40, video_num=video_num)
+    coordsMain = runMain(coordsBat[-1], 30, video_num=video_num)
 
     print(f"Bat View Detections: {coordsBat}\nMain View Detections: {coordsMain}")
 
@@ -124,7 +128,8 @@ if __name__ == '__main__':
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(str(final_ball_position).encode(), (UDP_IP, UDP_PORT))
 
-    pose_thread.join()
+    # Print the time taken
+    print(f"Time taken: {datetime.datetime.now() - start_time}")
 
     # Show the positions in the videos
     video_path = f'/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_{video_num}_BatView.mp4'
