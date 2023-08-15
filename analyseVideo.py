@@ -4,7 +4,7 @@ import numpy as np
 
 class BatMan:
     def __init__(self) -> None:
-        shared_variable = 0
+        self.shared_variable = 0
 
     def runBat(self, video_path):
         # Video file path
@@ -21,7 +21,7 @@ class BatMan:
 
         def process_frame(frame):
 
-            global ball_detected    
+            global ball_detected
 
             # Create the mask
             mask = object_detector.apply(frame)
@@ -104,12 +104,15 @@ class BatMan:
         while True:
             ret, frame = cap.read()
             if frame is None:
+                self.shared_variable = 1
                 break
             ball_detected = process_frame(frame)
             self.shared_variable = int(cap.get(cv.CAP_PROP_POS_FRAMES))/int(cap.get(cv.CAP_PROP_FRAME_COUNT))
+            print(self.shared_variable)
             # print(f"Current frame number: {int(cap.get(cv.CAP_PROP_POS_FRAMES))}\tBall dectection status: {not not ball_detected}")
 
             if ball_detected:
+                self.shared_variable = 1
                 break
 
 
@@ -118,6 +121,6 @@ class BatMan:
 
         # Release the video capture object and close any open windows
         cap.release()
-        cv.destroyAllWindows()
+        # cv.destroyAllWindows()
 
         return ball_detected
