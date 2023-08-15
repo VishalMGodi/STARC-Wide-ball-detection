@@ -6,8 +6,7 @@ from PyQt5.QtCore import QTimer
 from PIL import Image
 import numpy as np
 
-from analyseVideo import shared_variable, runBat
-
+from analyseVideo import BatMan
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Video codec
 output_filename1 = "VIEW1.mp4"
@@ -23,8 +22,7 @@ slider_width = vid_w+margin+vid_w
 clr_red = QtGui.QColor("red")
 clr_green = QtGui.QColor("green")
 
-def randomFunc(self):
-    pass
+
 class WebcamApp(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
@@ -191,6 +189,12 @@ class WebcamApp(QtWidgets.QWidget):
         if self.clip[0] != -1 and self.clip[0] < self.clip[1]:
             self.save_button.show()
 
+    def callRunBat(self, obj:BatMan, output_file):
+        # for i in range(100):
+        #     obj.shared_variable = i
+        #     time.sleep(0.1)
+        ball_detected = obj.runBat(output_file)
+
     def video(self):
         frm, to = self.clip
         self.save_button.hide()
@@ -213,17 +217,20 @@ class WebcamApp(QtWidgets.QWidget):
         print("Videos saved as", output_filename1,"and", output_filename2)
         self.progress_bar.show()
 
-        bat_view_thread = threading.Thread(target=runBat, args=(output_filename2,))
+        bat_obj = BatMan()
+        bat_view_thread = threading.Thread(target=self.callRunBat, args=(bat_obj, output_filename2,), daemon=True)
         bat_view_thread.start()
 
-        progress_value = int(shared_variable*100)
+        progress_value = int(bat_obj.shared_variable*100)
 
         while progress_value<100:
             print("Progress value:", progress_value)
             self.progress_bar.setValue(progress_value)
-            progress_value = int(shared_variable*100)
-
-        self.progress_bar.hide()
+            # time.sleep(0.1)
+            # progress_value+=1
+            progress_value = int(bat_obj.shared_variable*100)
+        self.progress_bar.setValue(100)
+        # self.progress_bar.hide()
 
 
 if __name__ == "__main__":
