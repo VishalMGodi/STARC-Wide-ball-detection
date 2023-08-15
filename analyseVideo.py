@@ -1,20 +1,25 @@
 import cv2 as cv
 import numpy as np
+import threading
 
-def runBat(video_num):
+shared_variable = 0
+shared_variable_lock = threading.Lock()
+
+def runBat(video_path):
+
+    global shared_variable
+
     # Video file path
-    video_path = f'/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_{video_num}_BatView.mp4'
+    # video_path = f'/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_{video_num}_BatView.mp4'
     cap = cv.VideoCapture(video_path)
+
+    # shared_variable[1] = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
 
     # Create the background subtractor object
     object_detector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
 
     #Make a set of coordinates
-    ball_coords = []
-    final_pos = None
-
-    # Flag to check if ball is detected
-    ball_detected = False
+    ball_detected = None
 
     def process_frame(frame):
 
@@ -75,47 +80,47 @@ def runBat(video_num):
 
             # check if the contour is within the main rectangle
             if (cnt[0][0][0] > xM) and (cnt[0][0][0] < x2M) and (cnt[0][0][1] > yM) and (cnt[0][0][1] < y2M):
-                ball_coords.append((cv.boundingRect(cnt), "Main", int(cap.get(cv.CAP_PROP_POS_FRAMES))))
-                ball_detected = True
-                break
+                # ball_coords.append((cv.boundingRect(cnt), "Main", int(cap.get(cv.CAP_PROP_POS_FRAMES))))
+                print(f"Ball detected in frame {int(cap.get(cv.CAP_PROP_POS_FRAMES))} in Main Rectangle")
+                # ball_detected = True
+                # break
+                return (cv.boundingRect(cnt), "Main", int(cap.get(cv.CAP_PROP_POS_FRAMES)))
 
             # Check if its within the buffer rectangle
             elif (cnt[0][0][0] > xB) and (cnt[0][0][0] < x2B) and (cnt[0][0][1] > yB) and (cnt[0][0][1] < y2B):
-                ball_coords.append((cv.boundingRect(cnt), "Buffer", int(cap.get(cv.CAP_PROP_POS_FRAMES))))
+                # ball_coords.append((cv.boundingRect(cnt), "Buffer", int(cap.get(cv.CAP_PROP_POS_FRAMES))))
 
                 if(cnt[0][0][0] < x2M):
-                    ball_detected = True
-                    break
-            else:
-                continue
+                    # ball_detected = True
+                    print(f"Ball detected in frame {int(cap.get(cv.CAP_PROP_POS_FRAMES))} in Main Rectangle")
+                    return (cv.boundingRect(cnt), "Buffer", int(cap.get(cv.CAP_PROP_POS_FRAMES)))
+                    # break
+            # else:
+            #     continue
 
-        cv.imshow('Frame', frame)
+        return None
+
+        # cv.imshow('Frame', frame)
 
 
     while True:
         ret, frame = cap.read()
         if frame is None:
             break
-        process_frame(frame)
-        if ball_detected:
+        ball_detected = process_frame(frame)
+        with shared_variable_lock:
+            shared_variable = int(cap.get(cv.CAP_PROP_POS_FRAMES))/int(cap.get(cv.CAP_PROP_FRAME_COUNT))
+        # print(f"Current frame number: {int(cap.get(cv.CAP_PROP_POS_FRAMES))}\tBall dectection status: {not not ball_detected}")
 
-            # Draw boxes for all the coordinates      
-            for i, coord in enumerate(ball_coords):
-                if(coord[1] == "Main"):
-                    cv.rectangle(frame, (coord[0][0], coord[0][1]), (coord[0][0]+coord[0][2], coord[0][1]+coord[0][3]), (0, 0, 255))
-                elif(coord[1] == "Buffer"):
-                    cv.rectangle(frame, (coord[0][0], coord[0][1]), (coord[0][0]+coord[0][2], coord[0][1]+coord[0][3]), (255, 255, 0))
-            cv.imshow('Frame', frame)
-            # if (cv.waitKey(0) & 0xFF == ord('q')):
-            #     break
-            # break
-        if (cv.waitKey(1) & 0xFF == ord('q')):
+        if ball_detected:
             break
 
-    final_pos = ball_coords[-1]
+
+
+    # final_pos = ball_coords[-1]
 
     # Release the video capture object and close any open windows
     cap.release()
     cv.destroyAllWindows()
 
-    return final_pos
+    return ball_detected

@@ -6,10 +6,13 @@ from PyQt5.QtCore import QTimer
 from PIL import Image
 import numpy as np
 
+from analyseVideo import shared_variable, runBat
+
+
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Video codec
 output_filename1 = "VIEW1.mp4"
 output_filename2 = "VIEW2.mp4"
-datasetpath = "D:/DATA/GITHUB PROJECTS/STARC-Wide-ball-detection/Dataset/Dataset/"#"./Dataset/Dataset/"
+datasetpath = "/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/"
 
 margin = 10
 vid_w = 640 #1920#640
@@ -29,6 +32,11 @@ class WebcamApp(QtWidgets.QWidget):
         # self.cap = cv2.VideoCapture(0)
         self.cap_main = cv2.VideoCapture(datasetpath+"New_5_MainView.mp4")
         self.cap_bat = cv2.VideoCapture(datasetpath+"New_5_BatView.mp4")
+
+        # cv2.imshow("Main", self.cap_main.read()[1])
+        # cv2.imshow("Bat", self.cap_bat.read()[1])
+        # cv2.waitKey(0)
+
         # self.cap_bat = self.cap_main = cv2.VideoCapture(0)
         self.frames1 = []#(1080, 1920, 3) (1080, 1920, 3)
         self.frames2 = []
@@ -135,7 +143,7 @@ class WebcamApp(QtWidgets.QWidget):
             )
 
     def paintEvent(self, event):
-        print("called")
+        # print("called")
         max_val = self.slider.maximum()
         painter = QtGui.QPainter(self)
         painter.setPen(QtGui.QPen(clr_green, 5, QtCore.Qt.SolidLine))
@@ -204,16 +212,25 @@ class WebcamApp(QtWidgets.QWidget):
 
         print("Videos saved as", output_filename1,"and", output_filename2)
         self.progress_bar.show()
-        i=0
-        while i<100:
-            time.sleep(0.1)
-            i+=5 # TODO
-            self.progress_bar.setValue(i)
+
+        bat_view_thread = threading.Thread(target=runBat, args=(output_filename2,))
+        bat_view_thread.start()
+
+        progress_value = int(shared_variable*100)
+
+        while progress_value<100:
+            print("Progress value:", progress_value)
+            self.progress_bar.setValue(progress_value)
+            progress_value = int(shared_variable*100)
+
         self.progress_bar.hide()
 
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
+    print("Starting app")
     window = WebcamApp()
+    print("Starting webcam")
     window.show()
+    print("Starting window.show")
     sys.exit(app.exec_())
