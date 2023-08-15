@@ -11,7 +11,7 @@ from analyseVideo import BatMan
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Video codec
 output_filename1 = "VIEW1.mp4"
 output_filename2 = "VIEW2.mp4"
-datasetpath = "/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/"
+datasetpath = "D:/DATA/GITHUB PROJECTS/STARC-Wide-ball-detection/Dataset/Dataset/" # "/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/"
 
 margin = 10
 vid_w = 640 #1920#640
@@ -40,6 +40,8 @@ class WebcamApp(QtWidgets.QWidget):
         self.frames2 = []
         self.clip = [-1,-1]
         self.is_recording = False
+        self.bat_obj = BatMan()
+        self.progress_value = 0
 
         self.video_label1 = QtWidgets.QLabel(self)
         self.video_label1.setGeometry(margin, margin, vid_w, vid_h) # x, y, w, h
@@ -142,6 +144,7 @@ class WebcamApp(QtWidgets.QWidget):
 
     def paintEvent(self, event):
         # print("called")
+        self.progress_bar.setValue(int(self.bat_obj.shared_variable*100))
         max_val = self.slider.maximum()
         painter = QtGui.QPainter(self)
         painter.setPen(QtGui.QPen(clr_green, 5, QtCore.Qt.SolidLine))
@@ -189,11 +192,22 @@ class WebcamApp(QtWidgets.QWidget):
         if self.clip[0] != -1 and self.clip[0] < self.clip[1]:
             self.save_button.show()
 
-    def callRunBat(self, obj:BatMan, output_file):
+    def callRunBat(self,output_file):
         # for i in range(100):
         #     obj.shared_variable = i
         #     time.sleep(0.1)
-        ball_detected = obj.runBat(output_file)
+        print("callRunBat------------------------------------")
+        ball_detected = self.bat_obj.runBat(output_file)
+        print("callRunBat------------------------------------")
+        # self.progress_value = int(bat_obj.shared_variable * 100)
+        #
+        # while self.progress_value < 100:
+        #     print("Progress value:", self.progress_value)
+        #     # self.progress_bar.setValue(progress_value)
+        #     time.sleep(0.1)
+        #     # progress_value+=1
+        #     self.progress_value = int(bat_obj.shared_variable * 100)
+        # self.progress_bar.setValue(100)
 
     def video(self):
         frm, to = self.clip
@@ -217,20 +231,12 @@ class WebcamApp(QtWidgets.QWidget):
         print("Videos saved as", output_filename1,"and", output_filename2)
         self.progress_bar.show()
 
-        bat_obj = BatMan()
-        bat_view_thread = threading.Thread(target=self.callRunBat, args=(bat_obj, output_filename2,), daemon=True)
+
+        bat_view_thread = threading.Thread(target=self.callRunBat, args=(output_filename2,), daemon=True)
         bat_view_thread.start()
 
-        progress_value = int(bat_obj.shared_variable*100)
-
-        while progress_value<100:
-            print("Progress value:", progress_value)
-            self.progress_bar.setValue(progress_value)
-            # time.sleep(0.1)
-            # progress_value+=1
-            progress_value = int(bat_obj.shared_variable*100)
-        self.progress_bar.setValue(100)
-        # self.progress_bar.hide()
+        time.sleep(1)
+        self.progress_bar.hide()
 
 
 if __name__ == "__main__":
