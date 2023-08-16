@@ -16,6 +16,7 @@ output_filename1 = "VIEW1.mp4"
 output_filename2 = "VIEW2.mp4"
 datasetpath = "/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/"
 NO_GUI = False
+send_vid = True
 
 margin = 10
 vid_w = 640 #1920#640
@@ -261,7 +262,9 @@ class WebcamApp(QtWidgets.QWidget):
 
         print("Videos saved as", output_filename1,"and", output_filename2)
         self.progress_bar.show()
-
+        if send_vid:
+            output_filename1 = datasetpath+f"New_{self.video_num}_MainView.mp4"
+            output_filename2 = datasetpath+f"New_{self.video_num}_BatView.mp4"
         bat_view_thread = threading.Thread(target=self.callRunBat, args=(output_filename2,), daemon=True)
         pose_thread = threading.Thread(target=runPose, args=(output_filename2, output_filename1,), daemon=True)
         bat_view_thread.start()
