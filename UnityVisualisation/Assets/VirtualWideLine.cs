@@ -12,7 +12,6 @@ public class VirtualWideLine : MonoBehaviour
     public GameObject TestSphere;
     public Vector3 FootTestPosition;
 
-    private float WideLineDistanceShiftTemp = 0.0f;
     private float initialZPosition = 0.0f;
     public float maxShiftZ = 0.0f;
     public bool flag = true;

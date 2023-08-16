@@ -67,11 +67,14 @@ def runMain(last_detection_frame, buffer, video_path):
 
         current_frame_number = int(cap.get(cv.CAP_PROP_POS_FRAMES))
 
-        if abs(current_frame_number - last_detection_frame) <= buffer:  # You can adjust the threshold as needed
+        print(f"Current frame: {current_frame_number}", end="\r")
 
+        if abs(current_frame_number - last_detection_frame) <= buffer:  # You can adjust the threshold as needed
+        # if True:
             # Resize the frame
             frame = cv.resize(frame, (1920, 1080), fx=0, fy=0, interpolation=cv.INTER_CUBIC) 
             process_frame(frame)
+
 
     # Release the video capture object and close any open windows
     cap.release()
@@ -80,5 +83,4 @@ def runMain(last_detection_frame, buffer, video_path):
     return ball_coords
 
 if __name__ == "__main__":
-    path = ""
-    runMain(330,10, path)
+    print(runMain(0, 40, f"/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/New_{(input('Enter Video number: '))}_MainView.mp4"))

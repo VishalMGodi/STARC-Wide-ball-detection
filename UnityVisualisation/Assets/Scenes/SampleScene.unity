@@ -765,7 +765,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31a070d3c4171104098c3208b6014e49, type: 2}
+  - {fileID: 2100000, guid: 9d21888e48ebc4cc5b9dc474fcd353e4, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -6253,10 +6253,13 @@ MonoBehaviour:
   - {fileID: 72081825}
   - {fileID: 974211759}
   - {fileID: 1620884349}
-  Pose: {fileID: 641596080}
+  Pose: {fileID: 515585934}
+  PosePointsGroup: {fileID: 641596080}
   PosePosition: {x: 0, y: 0, z: 0}
   PoseScale: {x: 0, y: 0, z: 0}
   PoseRotation: {x: 0, y: 0, z: 0}
+  PoseDiv: {x: 0, y: 0, z: 0}
+  groundOffset: 0
 --- !u!114 &1793719749
 MonoBehaviour:
   m_ObjectHideFlags: 0
