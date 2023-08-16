@@ -289,6 +289,9 @@ class WebcamApp(QtWidgets.QWidget):
         sock.sendto(str(final_ball_position).encode(), (UDP_IP, UDP_PORT))
 
     def video(self):
+
+        global output_filename1, output_filename2
+
         frm, to = self.clip
         self.save_button.hide()
         self.mrk_end_pt_button.hide()
