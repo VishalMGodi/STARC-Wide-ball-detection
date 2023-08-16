@@ -5,7 +5,7 @@ class BatMan:
     def __init__(self) -> None:
         self.shared_variable = 0
 
-    def runBat(self, video_path):
+    def runBat(self, video_path, clip = [-1,-1]):
         # Video file path
         cap = cv.VideoCapture(video_path)
         cap.set(3, 1920)
@@ -80,9 +80,11 @@ class BatMan:
                         print(f"Ball detected in frame {int(cap.get(cv.CAP_PROP_POS_FRAMES))} in Main Rectangle")
                         return (cv.boundingRect(cnt), "Buffer", int(cap.get(cv.CAP_PROP_POS_FRAMES)))
             return None
-
+        frame_ndx = 0
         while True:
             ret, frame = cap.read()
+            if frame_ndx<clip[0]:continue
+            if frame_ndx>clip[1] and clip[1]!=-1:continue
             if frame is None:
                 self.shared_variable = 1
                 break
