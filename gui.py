@@ -15,6 +15,7 @@ fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Video codec
 output_filename1 = "VIEW1.mp4"
 output_filename2 = "VIEW2.mp4"
 datasetpath = "/Users/varun/Desktop/Projects/STARC-Wide-ball-detection/Dataset/"
+NO_GUI = False
 
 margin = 10
 vid_w = 640 #1920#640
@@ -40,7 +41,7 @@ class WebcamApp(QtWidgets.QWidget):
         # cv2.waitKey(0)
 
         self.ball_detected = None
-        # self.buffer_size = 80
+        self.buffer_size = 0#80
 
         # self.cap_bat = self.cap_main = cv2.VideoCapture(0)
         self.frames1 = []#(1080, 1920, 3) (1080, 1920, 3)
@@ -193,16 +194,16 @@ class WebcamApp(QtWidgets.QWidget):
     def mark_point_start(self):
 
         # print("Original Start Frame: ", self.slider.value())
-        self.clip[0] = self.slider.value()
-        # self.clip[0] = max(self.slider.value() - self.buffer_size, 0)
+        # self.clip[0] = self.slider.value()
+        self.clip[0] = max(self.slider.value() - self.buffer_size, 0)
         if self.clip[1] != -1 and self.clip[0] < self.clip[1]:
             self.save_button.show()
 
     def mark_point_end(self):
 
         # print("Original End Frame: ", self.slider.value())
-        self.clip[1] = self.slider.value()
-        # self.clip[1] = min(self.slider.value() + self.buffer_size, len(self.frames1))
+        # self.clip[1] = self.slider.value()
+        self.clip[1] = min(self.slider.value() + self.buffer_size, len(self.frames1))
         if self.clip[0] != -1 and self.clip[0] < self.clip[1]:
             self.save_button.show()
 
@@ -222,7 +223,7 @@ class WebcamApp(QtWidgets.QWidget):
         #     # progress_value+=1
         #     self.progress_value = int(bat_obj.shared_variable * 100)
         # self.progress_bar.setValue(100)
-
+        assert ball_detected is not None, "ERR: Ball is not detected"
         coordsBat = ball_detected[0]
         coordsMain = runMain(ball_detected[-1], 40, output_filename1)
         closest_main_view_detection = min(coordsMain, key=lambda x: abs(x[2] - ball_detected[-1]))[0]
@@ -268,7 +269,31 @@ class WebcamApp(QtWidgets.QWidget):
 
 
 if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
-    window = WebcamApp()
-    window.show()
-    sys.exit(app.exec_())
+    if NO_GUI:
+        path_no = int(input("path number: "))
+        bat_obj = BatMan()
+        output_filename1 = f"{datasetpath}New_{path_no}_MainView.mp4"
+        output_filename2 = f"{datasetpath}New_{path_no}_BatView.mp4"
+        # self.progress_value = 0
+        pose_thread = threading.Thread(target=runPose, args=(output_filename2, output_filename1,))
+        pose_thread.start()
+        ball_detected = bat_obj.runBat(output_filename2)
+        coordsBat = ball_detected[0]
+        coordsMain = runMain(ball_detected[-1], 40, output_filename1)
+        closest_main_view_detection = min(coordsMain, key=lambda x: abs(x[2] - ball_detected[-1]))[0]
+        final_ball_position = (coordsBat[0]+coordsBat[2]/2, coordsBat[1]+coordsBat[3]/2, closest_main_view_detection[0]+closest_main_view_detection[2]/2)
+        
+        print("Final ball position:", final_ball_position)
+
+        # Send the final ball position to the UDP server over port 11001
+        UDP_IP = "localhost"
+        UDP_PORT = 11001
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.sendto(str(final_ball_position).encode(), (UDP_IP, UDP_PORT))
+
+    else:
+        app = QtWidgets.QApplication(sys.argv)
+        window = WebcamApp()
+        window.show()
+        sys.exit(app.exec_())
