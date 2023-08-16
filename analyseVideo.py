@@ -8,6 +8,8 @@ class BatMan:
     def runBat(self, video_path):
         # Video file path
         cap = cv.VideoCapture(video_path)
+        cap.set(3, 1920)
+        cap.set(4, 1080)
 
         # Create the background subtractor object
         object_detector = cv.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
@@ -88,7 +90,7 @@ class BatMan:
             ball_detected = process_frame(frame)
             self.shared_variable = int(cap.get(cv.CAP_PROP_POS_FRAMES))/int(cap.get(cv.CAP_PROP_FRAME_COUNT))
 
-            print(f"Current frame: {int(cap.get(cv.CAP_PROP_POS_FRAMES))} / {int(cap.get(cv.CAP_PROP_FRAME_COUNT))}\t\tBall detected: {not not ball_detected}")
+            print(f"Current frame: {int(cap.get(cv.CAP_PROP_POS_FRAMES))} / {int(cap.get(cv.CAP_PROP_FRAME_COUNT))}\t\tBall detected: {not not ball_detected}", end="\r")
 
             if ball_detected:
                 self.shared_variable = 1

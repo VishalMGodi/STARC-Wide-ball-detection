@@ -7,9 +7,13 @@ from PIL import Image
 import numpy as np
 import socket
 
+import warnings
+
 from analyseVideo import BatMan
 from analyseVideoMain import runMain
 from UnityPose import runPose
+
+warnings.filterwarnings('ignore')
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Video codec
 output_filename1 = "VIEW1.mp4"
@@ -30,11 +34,15 @@ class WebcamApp(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
 
-        self.video_num = 5
+        self.video_num = int(input("path number: "))
 
-        # self.cap = cv2.VideoCapture(0)
-        self.cap_main = cv2.VideoCapture(datasetpath+f"New_{self.video_num}_MainView.mp4")
-        self.cap_bat = cv2.VideoCapture(datasetpath+f"New_{self.video_num}_BatView.mp4")
+
+        if self.video_num == 0:
+            self.cap_main = cv2.VideoCapture(0)
+            self.cap_bat = self.cap_main
+        else:
+            self.cap_main = cv2.VideoCapture(datasetpath+f"New_{self.video_num}_MainView.mp4")
+            self.cap_bat = cv2.VideoCapture(datasetpath+f"New_{self.video_num}_BatView.mp4")
 
         # cv2.imshow("Main", self.cap_main.read()[1])
         # cv2.imshow("Bat", self.cap_bat.read()[1])
@@ -130,6 +138,7 @@ class WebcamApp(QtWidgets.QWidget):
                 # else: self.slider.setValue(min(self.slider.value()+1)
 
     def update(self):
+        self.progress_bar.setValue(int(self.bat_obj.shared_variable*100))
         if self.frames1 and self.frames2:
             # print(self.slider.value())
             ndx = self.slider.value()
@@ -153,7 +162,7 @@ class WebcamApp(QtWidgets.QWidget):
 
     def paintEvent(self, event):
         # print("called")
-        self.progress_bar.setValue(int(self.bat_obj.shared_variable*100))
+        # self.progress_bar.setValue(int(self.bat_obj.shared_variable*100))
         max_val = self.slider.maximum()
         painter = QtGui.QPainter(self)
         painter.setPen(QtGui.QPen(clr_green, 5, QtCore.Qt.SolidLine))
@@ -212,7 +221,7 @@ class WebcamApp(QtWidgets.QWidget):
         #     obj.shared_variable = i
         #     time.sleep(0.1)
         # print("callRunBat------------------------------------")
-        ball_detected = self.bat_obj.runBat(output_file)
+        # ball_detected = self.bat_obj.runBat(output_file)
         # print("callRunBat------------------------------------")
         # self.progress_value = int(bat_obj.shared_variable * 100)
         #
@@ -223,7 +232,44 @@ class WebcamApp(QtWidgets.QWidget):
         #     # progress_value+=1
         #     self.progress_value = int(bat_obj.shared_variable * 100)
         # self.progress_bar.setValue(100)
-        assert ball_detected is not None, "ERR: Ball is not detected"
+        # assert ball_detected is not None, "ERR: Ball is not detected"
+        # coordsBat = ball_detected[0]
+        # coordsMain = runMain(ball_detected[-1], 40, output_filename1)
+        # closest_main_view_detection = min(coordsMain, key=lambda x: abs(x[2] - ball_detected[-1]))[0]
+        # final_ball_position = (coordsBat[0]+coordsBat[2]/2, coordsBat[1]+coordsBat[3]/2, closest_main_view_detection[0]+closest_main_view_detection[2]/2)
+        
+        # print("Final ball position:", final_ball_position)
+
+        # pose_thread = threading.Thread(target=runPose, args=(output_filename2, output_filename1,), daemon=True)
+        # pose_thread.start()
+
+        # # Send the final ball position to the UDP server over port 11001
+        # UDP_IP = "localhost"
+        # UDP_PORT = 11001
+
+        # sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # sock.sendto(str(final_ball_position).encode(), (UDP_IP, UDP_PORT))
+
+        # UDP_RECIEVE = 17000
+
+        # recvsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        
+        # # Receive int data from UDP socket
+        # recvsock.bind((UDP_IP, UDP_RECIEVE))
+        # data = recvsock.recvfrom(4*1024)
+
+        # print("Received message:", data.decode())
+
+        output_filename1 = f"{datasetpath}New_{self.video_num}_MainView.mp4"
+        output_filename2 = f"{datasetpath}New_{self.video_num}_BatView.mp4"
+
+        print(output_filename1, output_filename2)
+
+        # self.progress_value = 0
+        # pose_thread = threading.Thread(target=runPose, args=(output_filename2, output_filename1,))
+        # pose_thread.start()
+        ball_detected = self.bat_obj.runBat(output_filename2)
+        runPose(output_filename2, output_filename1, ball_detected[-1])
         coordsBat = ball_detected[0]
         coordsMain = runMain(ball_detected[-1], 40, output_filename1)
         closest_main_view_detection = min(coordsMain, key=lambda x: abs(x[2] - ball_detected[-1]))[0]
@@ -236,6 +282,9 @@ class WebcamApp(QtWidgets.QWidget):
         UDP_PORT = 11001
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        # pose_thread.join()
+
         sock.sendto(str(final_ball_position).encode(), (UDP_IP, UDP_PORT))
 
     def video(self):
@@ -263,9 +312,7 @@ class WebcamApp(QtWidgets.QWidget):
         self.progress_bar.show()
 
         bat_view_thread = threading.Thread(target=self.callRunBat, args=(output_filename2,), daemon=True)
-        pose_thread = threading.Thread(target=runPose, args=(output_filename2, output_filename1,), daemon=True)
         bat_view_thread.start()
-        pose_thread.start()
 
 
 if __name__ == "__main__":
@@ -275,9 +322,10 @@ if __name__ == "__main__":
         output_filename1 = f"{datasetpath}New_{path_no}_MainView.mp4"
         output_filename2 = f"{datasetpath}New_{path_no}_BatView.mp4"
         # self.progress_value = 0
-        pose_thread = threading.Thread(target=runPose, args=(output_filename2, output_filename1,))
-        pose_thread.start()
+        # pose_thread = threading.Thread(target=runPose, args=(output_filename2, output_filename1,))
+        # pose_thread.start()
         ball_detected = bat_obj.runBat(output_filename2)
+        runPose(output_filename2, output_filename1, ball_detected[-1])
         coordsBat = ball_detected[0]
         coordsMain = runMain(ball_detected[-1], 40, output_filename1)
         closest_main_view_detection = min(coordsMain, key=lambda x: abs(x[2] - ball_detected[-1]))[0]
@@ -290,6 +338,9 @@ if __name__ == "__main__":
         UDP_PORT = 11001
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        # pose_thread.join()
+
         sock.sendto(str(final_ball_position).encode(), (UDP_IP, UDP_PORT))
 
     else:
