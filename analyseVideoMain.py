@@ -78,3 +78,7 @@ def runMain(last_detection_frame, buffer, video_path):
     cv.destroyAllWindows()
 
     return ball_coords
+
+if __name__ == "__main__":
+    path = ""
+    runMain(330,10, path)
