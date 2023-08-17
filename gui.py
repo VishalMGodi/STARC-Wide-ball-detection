@@ -270,6 +270,9 @@ class WebcamApp(QtWidgets.QWidget):
         # pose_thread = threading.Thread(target=runPose, args=(output_filename2, output_filename1,))
         # pose_thread.start()
         ball_detected = self.bat_obj.runBat(output_filename2, self.clip)
+        if ball_detected is None:
+            print("ERR: Ball is not detected")
+            return
         runPose(output_filename2, output_filename1, ball_detected[-1])
         coordsBat = ball_detected[0]
         coordsMain = runMain(ball_detected[-1], 40, output_filename1)
