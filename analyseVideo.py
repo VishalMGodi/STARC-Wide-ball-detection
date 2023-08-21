@@ -4,7 +4,7 @@ import numpy as np
 class BatMan:
     def __init__(self) -> None:
         self.shared_variable = 0
-        self.buffer = 10
+        # self.buffer = 0
 
     def runBat(self, video_path, clip = [-1,-1]):
         # Video file path
@@ -18,10 +18,11 @@ class BatMan:
         #Make a set of coordinates
         ball_detected = None
 
-        print(clip[0], clip[1])
+        # print(clip[0], clip[1])
 
         #6
         # clip[0] = 272
+        # clip[0] = 300
         # clip[1] = 337
 
         #5
@@ -32,7 +33,7 @@ class BatMan:
         #328 - 5
 
         # Move to clip[0]
-        cap.set(cv.CAP_PROP_POS_FRAMES, clip[0]+self.buffer)
+        # cap.set(cv.CAP_PROP_POS_FRAMES, clip[0]+self.buffer)
 
         def process_frame(frame):
 
@@ -107,13 +108,16 @@ class BatMan:
                 break
             # if frame_ndx<clip[0]-self.buffer: continue
 
-            if int(cap.get(cv.CAP_PROP_POS_FRAMES))>clip[1]+self.buffer and clip[1]!=-1:break
+            # if int(cap.get(cv.CAP_PROP_POS_FRAMES))>clip[1]+self.buffer and clip[1]!=-1:break
 
 
             ball_detected = process_frame(frame)
             self.shared_variable = int(cap.get(cv.CAP_PROP_POS_FRAMES))/int(cap.get(cv.CAP_PROP_FRAME_COUNT))
 
-            print(f"Current frame: {int(cap.get(cv.CAP_PROP_POS_FRAMES))} / {int(cap.get(cv.CAP_PROP_FRAME_COUNT))}\t\tBall detected: {ball_detected}", end="\r")
+            if(int(cap.get(cv.CAP_PROP_POS_FRAMES)) <= clip[1] and int(cap.get(cv.CAP_PROP_POS_FRAMES)) >= clip[0]):
+                print(f"Current frame: {int(cap.get(cv.CAP_PROP_POS_FRAMES))} / {int(cap.get(cv.CAP_PROP_FRAME_COUNT))}\t\tBall detected: {ball_detected}", end="\r")
+            else:
+                print(f"Processing...", end='\r')
 
             if ball_detected:
                 self.shared_variable = 1
